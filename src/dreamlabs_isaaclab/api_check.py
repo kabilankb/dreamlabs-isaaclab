@@ -13,7 +13,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from dreamlabs_isaaclab import launcher
+from dreamlabs_isaaclab import launcher, usage
 from dreamlabs_isaaclab.client import DEFAULT_DREAM_PYTHON, BridgeError, selftest
 
 DEFAULT_MODEL = "dreamlabs/dream-1-beta"
@@ -50,6 +50,9 @@ def main(argv: list[str] | None = None) -> int:
         return 1
     report(True, f"{len(answer['models'])} models on the account: {', '.join(answer['models'])}")
     if args.call_model:
+        if answer.get("rows", 0) > 0:
+            usage.record({"kind": "test", "robot": "api-test", "instruction": "connection test", "model": args.model,
+                          "requests": 1, "sessions": 1, "model_s": round(answer.get("ms", 0) / 1000.0, 2), "source": "api_check"})
         report(answer.get("rows", 0) > 0,
                f"{args.model} answered one request: {answer.get('rows')} rows x {answer.get('width')} values in "
                f"{answer.get('ms', 0):.0f} ms")

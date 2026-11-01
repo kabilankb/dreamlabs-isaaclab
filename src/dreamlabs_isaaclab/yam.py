@@ -23,12 +23,13 @@ simulator's control rate by time.
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 
 from isaaclab.app import AppLauncher
 
-from dreamlabs_isaaclab import units
+from dreamlabs_isaaclab import units, usage
 from dreamlabs_isaaclab.client import BRIDGE_SCRIPT, DEFAULT_DREAM_PYTHON, Bridge, jpeg_b64
 
 parser = argparse.ArgumentParser(description="Dream-1 zero-shot on YAMLab's bimanual YAM")
@@ -150,6 +151,9 @@ def main() -> int:
             success = bool(terminated[0]) and not bool(truncated[0])
             results.append({"episode": len(results), "success": success, "pick": picked or success, "steps": ep_steps,
                             "requests": requests, "model_ms_mean": float(np.mean(latency)) if latency else None})
+            usage.record({"kind": "episode", "robot": "yam", "scene": args.task, "instruction": prompt, "model": args.checkpoint,
+                          "run": os.environ.get("DREAMLABS_RUN_ID"), "episode": len(results) - 1, "requests": requests,
+                          "sessions": 1, "model_s": round(sum(latency) / 1000.0, 2), "success": success, "steps": ep_steps})
             print(f"[EVAL] episode {len(results)}/{args.num_episodes}: {'SUCCESS' if success else 'FAIL'} "
                   f"(pick {'yes' if results[-1]['pick'] else 'no'}, {ep_steps} steps)", flush=True)
             if args.results:

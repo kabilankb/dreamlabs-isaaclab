@@ -32,7 +32,7 @@ import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from dreamlabs_isaaclab import launch_spec
+from dreamlabs_isaaclab import launch_spec, usage
 from dreamlabs_isaaclab.client import Bridge, selftest
 
 PAGE = Path(__file__).with_name("launcher.html")
@@ -181,6 +181,9 @@ class Launcher:
             if call_model:
                 line += f"; {model} returned {answer['rows']} rows × {answer['width']} values in {answer['ms']:.0f} ms"
             state = {"state": "ok", "line": line}
+            if call_model:
+                usage.record({"kind": "test", "robot": "api-test", "instruction": "connection test", "model": model,
+                              "requests": 1, "sessions": 1, "model_s": round(answer["ms"] / 1000.0, 2), "source": "launcher"})
         except Exception as error:  # noqa: BLE001 - shown on the page
             state = {"state": "error", "line": f"{type(error).__name__}: {error}"[:300]}
         with self.lock:
@@ -228,6 +231,9 @@ class Launcher:
                 return {"state": "idle"}
             code = run["proc"].poll()
             state = "running" if code is None else ("finished" if code == 0 else "failed")
+            if code is not None and not run.get("recorded"):
+                run["recorded"] = True
+                self._record_mujoco(run)
             results = None
             result_file = run["dir"] / "results.json"
             if result_file.exists():
@@ -237,6 +243,22 @@ class Launcher:
                     results = None
             return {"state": state, "exit_code": code, "launch": run["launch"], "dir": str(run["dir"]),
                     "started": run["started"], "command": run["command"], "results": results}
+
+    @staticmethod
+    def _record_mujoco(run: dict) -> None:
+        """Dream's MuJoCo example writes no results file; its log says how many requests it made. The sim clients
+        (rebot.py, yam.py) record their own episodes, so only this robot is recorded here."""
+        launch = run["launch"]
+        if launch["robot"] != "yam-mujoco":
+            return
+        try:
+            requests = usage.parse_log_requests((run["dir"] / "run.log").read_text(encoding="utf-8", errors="replace"))
+        except OSError:
+            return
+        if requests:
+            usage.record({"kind": "episode", "robot": "yam-mujoco", "scene": "mujoco", "instruction": launch["instruction"],
+                          "model": launch["model"], "run": run["dir"].name, "episode": None, "requests": requests,
+                          "sessions": 1, "model_s": None, "success": None, "note": "not scored (Dream's own simulator)"})
 
     def preview(self, request: object) -> dict:
         launch = launch_spec.validate(request)
@@ -260,6 +282,7 @@ class Launcher:
             (run_dir / "command.txt").write_text(shlex.join(command.argv) + "\n")
             env = {k: v for k, v in os.environ.items() if k != "DREAM_API_KEY"}
             env.update(command.env)
+            env["DREAMLABS_RUN_ID"] = run_dir.name
             log = open(run_dir / "run.log", "wb")  # noqa: SIM115 - owned by the child until it exits
             try:
                 proc = subprocess.Popen(command.argv, cwd=command.cwd, env=env, stdin=subprocess.DEVNULL, stdout=log,
@@ -382,6 +405,17 @@ def make_handler(launcher: Launcher, token: str, port: int):
                 return self._json(200, {"robots": launcher.robots(), "key": launcher.key_status(),
                                         "models": launcher.models, "run": launcher.status(),
                                         "logo": read_logo() is not None, "api_test": launcher.api_test})
+            if path == "/api/usage":
+                by = dict(p.partition("=")[::2] for p in query.split("&") if p).get("by", "task")
+                try:
+                    usage.backfill()
+                    entries, exports, pricing = usage.read(), usage.load_exports(), None
+                    pricing = usage.effective_pricing(exports)
+                    summary = usage.summarize(entries, by if by in usage.GROUPS else "task", pricing)
+                    summary["reconciliation"], summary["rate_source"] = usage.reconcile(entries, exports), pricing.source
+                except ValueError as error:  # a bad pricing.json is shown on the page, not hidden
+                    return self._fail(400, str(error))
+                return self._json(200, {**summary, "pricing_file": str(usage.PRICING)})
             if path == "/api/log":
                 offset = dict(p.partition("=")[::2] for p in query.split("&") if p).get("offset", "0")
                 return self._json(200, launcher.log(int(offset) if offset.isdigit() else 0))

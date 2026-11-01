@@ -143,6 +143,20 @@ The same tests are buttons on the launcher page (**Check key**, **Test connectio
 sends grey camera frames and a neutral pose and expects 48 rows of 7 values back; it checks the API, not the model's skill.
 Exit code 0 means every check that was run passed. See the [docs](https://kabilankb.github.io/dreamlabs-isaaclab/#test).
 
+## Usage and estimated spend, per task
+
+```bash
+python -m dreamlabs_isaaclab.usage                       # per task: requests, episodes, model time, success, estimated cost
+python -m dreamlabs_isaaclab.usage --by run              # or: robot, model, run, day
+python -m dreamlabs_isaaclab.usage --import-csv ~/Downloads/dreamlabs-usage-2026-11.csv   # use Dream's own price
+```
+
+Each finished episode writes one line to `~/.dreamlabs-isaaclab/usage.jsonl` (no frames, no key). Requests and timings are
+measured; **money is an estimate**, because Dream's library has no usage or price call: it is your rate (or Dream's, derived
+from its usage export) times the measured usage, and Dream's account page is the authority on what you were charged. The
+export import keeps a copy without the key identifier and reconciles Dream's total against what the ledger can attribute to a
+task. The launcher page shows the same table. Details: the [docs](https://kabilankb.github.io/dreamlabs-isaaclab/#usage).
+
 ## The launcher page
 
 ```bash

@@ -187,3 +187,63 @@ def test_the_api_test_reports_success_and_failure_without_leaking_anything(serve
             break
         time.sleep(0.05)
     assert state["state"] == "error" and "not valid" in state["line"] and "D" * 30 not in json.dumps(state)
+
+
+def test_the_usage_endpoint_needs_the_token_and_reports_tasks_rate_and_reconciliation(server, tmp_path):
+    _, port = server
+    assert call(port, "GET", "/api/usage")[0] == 403
+    usage_entry = {"kind": "episode", "robot": "yam", "instruction": "put apple into the bowl", "model": "m", "requests": 40,
+                   "sessions": 1, "model_s": 20.0, "success": True}
+    launcher.usage.record({**usage_entry, "t": "x"})                                   # a ledger line (record sets its own time)
+    export = tmp_path / "dl.csv"
+    export.write_text("period,row,key,key_id,requests,sessions,inference_minutes,estimated_cost_usd\n"
+                      "2026-11,total,,,100,10,1.0,0.5\n2026-11,key,k,abc,100,10,1.0,0.5\n")
+    launcher.usage.import_export(export)
+    status, body = call(port, "GET", "/api/usage?by=task", headers={"X-Token": TOKEN})
+    data = json.loads(body)
+    assert status == 200 and data["rows"][0]["key"] == "YAM · put apple into the bowl" and data["rows"][0]["requests"] == 40
+    assert data["priced"] and data["currency"] == "USD" and "export" in data["rate_source"] and data["pricing_file"]
+    assert data["rows"][0]["cost"] == pytest.approx(40 * 0.005) and data["reconciliation"][0]["dream_requests"] == 100
+    assert "abc" not in body.decode()                                                  # the key identifier is never served
+    assert json.loads(call(port, "GET", "/api/usage?by=nonsense", headers={"X-Token": TOKEN})[1])["by"] == "task"
+
+
+def test_a_broken_pricing_file_is_reported_not_hidden(server):
+    _, port = server
+    launcher.usage.PRICING.parent.mkdir(parents=True, exist_ok=True)
+    launcher.usage.PRICING.write_text("{broken")
+    status, body = call(port, "GET", "/api/usage", headers={"X-Token": TOKEN})
+    assert status == 400 and b"not valid JSON" in body
+
+
+def test_a_real_test_request_is_recorded_but_a_free_one_is_not(server, monkeypatch):
+    _, port = server
+    launcher.save_key("dl_live_" + "G" * 30)
+    monkeypatch.setattr(launcher, "selftest", lambda model, call_model, py: {"models": ["a"], "rows": 48, "width": 7, "ms": 640.0})
+
+    def wait():
+        for _ in range(100):
+            state = json.loads(call(port, "GET", "/api/state", headers={"X-Token": TOKEN})[1])["api_test"]
+            if state["state"] != "running":
+                return state
+            time.sleep(0.05)
+
+    assert call(port, "POST", "/api/test", {"call_model": False}, JSON)[0] == 200
+    assert wait()["state"] == "ok" and launcher.usage.read() == []                     # asking for models sends no model request
+    assert call(port, "POST", "/api/test", {"call_model": True, "model": "dreamlabs/dream-1-beta"}, JSON)[0] == 200
+    assert wait()["state"] == "ok"
+    (entry,) = launcher.usage.read()
+    assert (entry["kind"], entry["robot"], entry["requests"], entry["sessions"], entry["model"]) == ("test", "api-test", 1, 1, "dreamlabs/dream-1-beta")
+    assert entry["model_s"] == 0.64
+
+
+def test_dreams_own_mujoco_run_is_recorded_from_its_log_once(tmp_path):
+    run_dir = tmp_path / "20261101-100000-yam-mujoco"
+    run_dir.mkdir()
+    (run_dir / "run.log").write_text("  Dream · 0.47s RTT · 30 requests · 1392 actions\n")
+    run = {"launch": {"robot": "yam-mujoco", "instruction": "put apple into the bowl", "model": "dreamlabs/dream-1-beta"}, "dir": run_dir}
+    launcher.Launcher._record_mujoco(run)
+    (entry,) = launcher.usage.read()
+    assert entry["robot"] == "yam-mujoco" and entry["requests"] == 30 and entry["run"] == run_dir.name and entry["success"] is None
+    launcher.Launcher._record_mujoco({**run, "launch": {**run["launch"], "robot": "yam"}})      # the sim clients record their own
+    assert len(launcher.usage.read()) == 1

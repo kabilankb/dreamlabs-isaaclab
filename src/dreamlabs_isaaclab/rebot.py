@@ -20,12 +20,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 
 from isaaclab.app import AppLauncher
 
-from dreamlabs_isaaclab import units
+from dreamlabs_isaaclab import units, usage
 from dreamlabs_isaaclab.client import BRIDGE_SCRIPT, DEFAULT_DREAM_PYTHON, Bridge, jpeg_b64, load_embodiment
 
 parser = argparse.ArgumentParser(description="Bimanual reBot sim rollout with Dream-1.")
@@ -114,6 +115,7 @@ def main() -> int:
     if args.no_grasp_assist:
         robot["grasp_assist"]["enabled"] = False
     instruction = args.instruction or task["task_description"]
+    print(f"[dream] instruction: '{instruction}'", flush=True)
     project = find_rebot_project(args.rebot_project)
     assets = prepare_stationery_assets(task, project)
     cfg = build_env_cfg(task, robot, assets, robot_usd=prepare_robot_asset(robot, project),
@@ -177,6 +179,9 @@ def main() -> int:
                   "requests": requests, "model_ms_mean": float(np.mean(latency)) if latency else None,
                   "wall_s": round(time.time() - started, 1), "timed_out": timed_out, "objects": info["objects"]}
         results.append(result)
+        usage.record({"kind": "episode", "robot": "rebot", "scene": args.task, "instruction": instruction, "model": args.checkpoint,
+                      "run": os.environ.get("DREAMLABS_RUN_ID"), "episode": episode, "requests": requests, "sessions": 1,
+                      "model_s": round(sum(latency) / 1000.0, 2), "success": bool(info["success"]), "steps": steps})
         if args.results:
             Path(args.results).parent.mkdir(parents=True, exist_ok=True)
             Path(args.results).write_text(json.dumps(results, indent=2), encoding="utf-8")

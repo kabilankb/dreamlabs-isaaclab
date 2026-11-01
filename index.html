@@ -117,7 +117,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 26px 28px 70px; color: var(
 <div class="wrap" id="top">
 <nav class="side" aria-label="On this page">
   <div class="grp">Start</div>
-  <a href="#overview">Overview</a><a href="#install">1 · Install</a><a href="#api-key">2 · API key</a><a href="#launch">3 · Launch the page</a><a href="#calls">4 · How the calls work</a><a href="#test">5 · Test the API</a>
+  <a href="#overview">Overview</a><a href="#install">1 · Install</a><a href="#api-key">2 · API key</a><a href="#launch">3 · Launch the page</a><a href="#calls">4 · How the calls work</a><a href="#test">5 · Test the API</a><a href="#usage">6 · Usage &amp; spend</a>
   <div class="grp">Reference</div>
   <a href="#robots">Robots &amp; results</a><a href="#trouble">Troubleshooting</a><a href="#privacy">Privacy &amp; safety</a><a href="#credits">Credits</a>
 </nav>
@@ -384,6 +384,46 @@ All checks passed.</pre></div>
     </ol>
   </section>
 
+  <section id="usage">
+    <h2><span class="num">6</span>Usage &amp; spend report, per task</h2>
+    <p>Every simulator run calls Dream's hosted model, and Dream bills for it. This package keeps a small local record of what each task asked of the API, so you can see where your credits went. <b>Requests, sessions and timings are measured. Money is an estimate</b>: Dream's library has no usage or price call, so cost is always a rate times the measured usage, and your Dream account page is the authority on what you were charged.</p>
+
+    <h3>What is recorded</h3>
+    <p>Each finished episode adds one line to <code>~/.dreamlabs-isaaclab/usage.jsonl</code>: the robot, the instruction, the model, how many requests it made (one per <code>get_action</code>), the time spent waiting for answers, and whether it succeeded. A real test request from the page or <code>api_check --call-model</code> is recorded too. Dream's own MuJoCo sim writes no results, so its request count is read from its log. Nothing else is stored: no camera frames, no key.</p>
+
+    <h3>See it</h3>
+    <div class="code"><pre>python -m dreamlabs_isaaclab.usage                  <span class="c"># per task (the default)</span>
+python -m dreamlabs_isaaclab.usage --by run         <span class="c"># or: task, robot, model, run, day</span>
+python -m dreamlabs_isaaclab.usage --since 2026-11-01 --json</pre><button class="copy" type="button">Copy</button></div>
+    <p>The launcher page shows the same table under <b>05 Usage &amp; estimated spend</b>, with the same grouping choices, and refreshes when a run ends. An example (illustrative numbers, at a made-up rate of 0.002 per request):</p>
+    <div class="code"><pre>Task                               Runs  Episodes  Requests  Req/ep  Model s  Success  Est. USD
+---------------------------------  ----  --------  --------  ------  -------  -------  --------
+YAM · put orange into the bowl        2         2        74      37    23.4+      0/1    0.1480
+YAM · put apple into the bowl         4         4        28       7     32.4      4/4    0.0560
+reBot duo · pick up the red pen       3         3       120      40    80.2      0/3    0.2400
+---------------------------------  ----  --------  --------  ------  -------  -------  --------
+total                                 9         9       222    24.7   136.0+      4/8    0.4440</pre></div>
+    <p><b>Req/ep</b> is requests per episode. <b>Success</b> counts only episodes that were scored, so a run you stopped early is not counted as a failure. A <b>+</b> after the time means some runs have no timing (stopped runs and Dream's MuJoCo sim).</p>
+
+    <h3>Get a real price: import Dream's usage export</h3>
+    <p>Dream's usage export (a CSV with one row per API key, a total, and one row per day) holds the numbers Dream itself recorded. Import it once:</p>
+    <div class="code"><pre>python -m dreamlabs_isaaclab.usage --import-csv ~/Downloads/dreamlabs-usage-2026-11.csv</pre><button class="copy" type="button">Copy</button></div>
+    <ul>
+      <li><b>The price.</b> Cost per request becomes Dream's estimated cost for the month divided by its requests, and each task is charged its own requests at that rate. It is a blended rate: if Dream prices requests unevenly (for example by inference time), a task's true share can differ a little.</li>
+      <li><b>The reconciliation.</b> The report compares Dream's total with what the ledger can attribute to a task, for example "Dream's export for 2026-11: 400 requests, 40 sessions. The ledger attributes 352 requests (88%) to tasks". The remainder ran before recording started or outside this tool (quick probes, other programs on the same key).</li>
+      <li><b>Privacy.</b> The export contains a key identifier. The import validates the file and keeps a copy <b>without it</b>, mode 600, in <code>~/.dreamlabs-isaaclab/dream-usage/</code>. A file that is not a Dream usage export, or has negative or non-numeric figures, is refused with the reason.</li>
+    </ul>
+
+    <h3>Runs made before recording, or outside the launcher</h3>
+    <div class="code"><pre>python -m dreamlabs_isaaclab.usage --import-logs ~/path/to/folder-of-runs</pre><button class="copy" type="button">Copy</button></div>
+    <p>Earlier launcher runs in <code>~/.dreamlabs-isaaclab/runs/</code> are imported automatically. <code>--import-logs</code> reads any folders under a path that hold a <code>run.log</code> (and a <code>results.json</code> if there is one). Importing the same run twice adds nothing.</p>
+
+    <h3>Or set your own rate</h3>
+    <div class="code"><pre><span class="c"># ~/.dreamlabs-isaaclab/pricing.json   (your own rate wins over the one from Dream's export)</span>
+{"currency": "credits", "per_request": 0.05, "per_session": 0.0}</pre><button class="copy" type="button">Copy</button></div>
+    <p>Or <code>DREAMLABS_RATE_PER_REQUEST</code>, <code>DREAMLABS_RATE_PER_SESSION</code> and <code>DREAMLABS_CURRENCY</code>, or <code>--rate</code> / <code>--session-rate</code> / <code>--currency</code> for one report. A session is one episode (or one test request). With no rate and no export the cost column shows <code>-</code>, never a made-up zero, and a rate that is negative or not a number is an error.</p>
+  </section>
+
   <section id="robots">
     <h2>Robots &amp; results</h2>
     <table>
@@ -409,6 +449,8 @@ All checks passed.</pre></div>
         <tr><td>The first request takes several seconds</td><td>Normal: Dream starts the model on the first call (<code>pool_warming</code>); the bridge waits and retries for you.</td></tr>
         <tr><td>"session replaced … continuing on the new one" in the log</td><td>Dream restarted the model's session. Harmless; the bridge carries on. It happens mostly in the first calls.</td></tr>
         <tr><td>A robot card says <i>Not ready</i></td><td>It names what is missing: a path (set the matching <code>DREAMLABS_…</code> variable), the converted assets (<code>python -m dreamlabs_isaaclab.mujoco_scene_assets</code>), or a YAMLab / course checkout.</td></tr>
+        <tr><td>The usage report's cost column shows <code>-</code></td><td>No rate is set. Import Dream's usage export (<code>--import-csv</code>) or put your rate in <code>~/.dreamlabs-isaaclab/pricing.json</code>.</td></tr>
+        <tr><td>"pricing.json is not valid JSON" or "must be zero or more"</td><td>The rate file is damaged or has a bad number. The report refuses it instead of silently using zero; fix or delete the file.</td></tr>
         <tr><td>"A run is already going"</td><td>One run at a time, and tests wait for it too. Press <b>Stop</b>.</td></tr>
         <tr><td>No Isaac window appears</td><td>The simulator opens on your <code>DISPLAY</code>. Over SSH or without a desktop choose <b>Headless</b>.</td></tr>
         <tr><td>"Not starting: … problem(s)" from <code>launch.sh</code></td><td>Run <code>./launch.sh --check</code> to see each step. If Isaac Sim's Python is missing, install Isaac Sim and Isaac Lab first (course, Module 0).</td></tr>

@@ -127,7 +127,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; color: var(
   <div class="bar">
     <a class="brand" href="#top"><i></i>dreamlabs-isaaclab</a>
     <nav aria-label="Sections">
-      <a href="#robot">Robot</a><a href="#api">API &amp; model</a><a href="#run">Run</a><a href="#output">Output</a>
+      <a href="#robot">Robot</a><a href="#api">API &amp; model</a><a href="#run">Run</a><a href="#output">Output</a><a href="#usage">Usage</a>
     </nav>
     <span class="spacer"></span>
     <a class="pill sm" href="#api" id="keyPill"><span class="dot" id="keyDot"></span><span id="keyPillText">Checking key…</span></a>
@@ -221,6 +221,21 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; color: var(
       <table id="resultTable" hidden><thead><tr><th>Episode</th><th>Result</th><th>Steps</th><th>Model calls</th><th>Mean call</th></tr></thead><tbody></tbody></table>
       <pre class="log" id="log" aria-label="Run progress">Nothing has run.</pre>
       <p class="hint" id="runDir"></p>
+    </div>
+  </section>
+
+  <section class="step" id="usage">
+    <div class="step-head"><span class="num">05</span><h2>Usage &amp; estimated spend</h2></div>
+    <p class="lede" id="usageLede">What your runs asked of the Dream API, per task. Requests are measured; cost is an estimate.</p>
+    <div class="panel">
+      <div class="row">
+        <label for="usageBy" style="margin:0">Group by</label>
+        <select id="usageBy" style="width:auto"><option value="task">Task</option><option value="robot">Robot</option><option value="model">Model</option><option value="run">Run</option><option value="day">Day</option></select>
+        <button class="pill sm" id="usageRefresh" type="button">Refresh</button>
+      </div>
+      <div style="overflow-x:auto"><table id="usageTable"><thead></thead><tbody></tbody></table></div>
+      <p class="hint" id="usageNote"></p>
+      <p class="hint" id="usageRecon"></p>
     </div>
   </section>
 
@@ -394,13 +409,41 @@ async function pollLog() {
   } catch (_) { /* the next tick tries again */ }
 }
 
+
+/* ---- usage and estimated spend ---- */
+const n1 = (v) => (v == null ? "-" : String(Math.round(v * 10) / 10));
+async function loadUsage() {
+  const note = $("usageNote"), recon = $("usageRecon"), head = $("usageTable").tHead, body = $("usageTable").tBodies[0];
+  try {
+    const d = await api("/api/usage?by=" + encodeURIComponent($("usageBy").value));
+    const label = { task: "Task", robot: "Robot", model: "Model", run: "Run", day: "Day" }[d.by];
+    const cols = [label, "Runs", "Episodes", "Requests", "Req/ep", "Model s", "Success", "Est. " + d.currency];
+    head.replaceChildren(el("tr", {}, ...cols.map((c) => el("th", {}, c))));
+    const rows = d.rows.concat([d.total]);
+    body.replaceChildren(...rows.map((r, i) => el("tr", i === rows.length - 1 ? { style: "font-weight:600" } : {},
+      el("td", {}, i === rows.length - 1 ? "Total" : r.key), el("td", {}, String(r.runs)), el("td", {}, String(r.episodes)), el("td", {}, String(r.requests)),
+      el("td", {}, n1(r.requests_per_episode)), el("td", {}, r.model_s == null ? "-" : n1(r.model_s) + (r.model_s_partial ? "+" : "")),
+      el("td", {}, r.scored ? r.wins + "/" + r.scored : "-"), el("td", {}, r.cost == null ? "-" : r.cost.toFixed(4)))));
+    if (!d.rows.length) body.replaceChildren(el("tr", {}, el("td", { colspan: String(cols.length) }, "No usage recorded yet. Runs are recorded as they finish.")));
+    note.textContent = d.priced
+      ? "Cost is an estimate (requests × the price from " + (d.rate_source || "the rate you set") + "), not an invoice. Dream's account page shows what you were charged. A + means some runs have no timing."
+      : "No rate set, so cost shows '-'. Import Dream's usage export (python -m dreamlabs_isaaclab.usage --import-csv FILE) or put your rate in " + d.pricing_file + ".";
+    recon.textContent = (d.reconciliation || []).map((x) => "Dream's export for " + x.period + ": " + x.dream_requests + " requests, " + x.dream_sessions + " sessions" +
+      (x.dream_cost == null ? "" : ", $" + x.dream_cost.toFixed(2)) + ". The ledger attributes " + x.ledger_requests + " requests" +
+      (x.share == null ? "" : " (" + Math.round(x.share * 100) + "%)") + " to tasks.").join(" ");
+  } catch (e) { note.textContent = e.message; recon.textContent = ""; }
+}
+$("usageBy").addEventListener("change", loadUsage); $("usageRefresh").addEventListener("click", loadUsage);
+
 /* ---- polling ---- */
 async function poll() {
   try {
     const s = await api("/api/state");
+    const wasRunning = S.run && S.run.state === "running";
     S.robots = s.robots; S.key = s.key; S.models = s.models; S.run = s.run; S.apiTest = s.api_test; renderTest();
     if (!S.robot && S.robots.length) { selectRobot((S.robots.find((r) => r.ready) || S.robots[0]).id); } else if (S.robot) { S.robot = S.robots.find((r) => r.id === S.robot.id) || S.robot; renderRobots(); }
     renderKey(); renderModels(); renderRun(); update();
+    if (wasRunning && S.run.state !== "running") setTimeout(loadUsage, 1500);
     if (!S.autoChecked && S.key.present && S.key.state === "unchecked") {  // once per page load: is the saved key accepted?
       S.autoChecked = true;
       api("/api/key/check", {}).then((k) => { S.key = k; renderKey(); update(); }).catch(() => {});
@@ -412,7 +455,7 @@ if (!TOKEN) { $("blocker").hidden = false; $("blocker").textContent = "Open the 
 $("logo").addEventListener("load", () => { $("via").hidden = false; });
 $("logo").addEventListener("error", () => { $("via").hidden = true; });
 $("logo").src = "/logo.png?token=" + encodeURIComponent(TOKEN);
-poll(); setInterval(poll, 2500); setInterval(pollLog, 1200);
+loadUsage(); poll(); setInterval(poll, 2500); setInterval(pollLog, 1200);
 </script>
 </body>
 </html>
