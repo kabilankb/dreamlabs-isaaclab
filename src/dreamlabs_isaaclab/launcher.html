@@ -157,7 +157,12 @@ footer { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; color: var(
         <div class="keyline" aria-live="polite"><span class="dot" id="keyDot2"></span><code id="keyMasked">none</code><span id="keyLine"></span></div>
         <div class="row" style="margin-top:12px">
           <button class="pill sm" id="checkKey" type="button">Check key</button>
+          <button class="pill sm" id="testModels" type="button">Test connection</button>
+          <button class="pill sm black" id="testCall" type="button">Send a test request</button>
         </div>
+        <p class="hint" id="testLine" aria-live="polite"></p>
+        <p class="hint"><b>Test connection</b> asks Dream for your models. <b>Send a test request</b> sends one real request
+        (grey camera frames, the selected model) and <b>uses account credits</b>.</p>
         <form id="keyForm" autocomplete="off" style="margin-top:16px">
           <label for="keyInput">Replace or add a key</label>
           <div class="row">
@@ -312,6 +317,18 @@ function renderModels() {
 async function refreshModels() { try { await api("/api/models/refresh", {}); toast("Refreshing models…"); } catch (e) { toast(e.message, true); } }
 $("refreshModels").addEventListener("click", refreshModels);
 $("checkKey").addEventListener("click", async () => { try { S.key = await api("/api/key/check", {}); renderKey(); update(); } catch (e) { toast(e.message, true); } });
+async function runTest(callModel) {
+  try { S.apiTest = await api("/api/test", { call_model: callModel, model: chosenModel() }); renderTest(); }
+  catch (e) { toast(e.message, true); }
+}
+$("testModels").addEventListener("click", () => runTest(false));
+$("testCall").addEventListener("click", () => runTest(true));
+function renderTest() {
+  const t = S.apiTest || { state: "idle", line: "" };
+  const line = $("testLine"); line.textContent = t.line || "";
+  line.style.color = t.state === "ok" ? "var(--ok)" : t.state === "error" ? "var(--bad)" : "var(--ink-2)";
+  for (const id of ["testModels", "testCall"]) $(id).disabled = t.state === "running";
+}
 $("keyForm").addEventListener("submit", async (event) => {
   event.preventDefault(); const input = $("keyInput"); const value = input.value;
   if (!value.trim()) return;
@@ -381,7 +398,7 @@ async function pollLog() {
 async function poll() {
   try {
     const s = await api("/api/state");
-    S.robots = s.robots; S.key = s.key; S.models = s.models; S.run = s.run;
+    S.robots = s.robots; S.key = s.key; S.models = s.models; S.run = s.run; S.apiTest = s.api_test; renderTest();
     if (!S.robot && S.robots.length) { selectRobot((S.robots.find((r) => r.ready) || S.robots[0]).id); } else if (S.robot) { S.robot = S.robots.find((r) => r.id === S.robot.id) || S.robot; renderRobots(); }
     renderKey(); renderModels(); renderRun(); update();
     if (!S.autoChecked && S.key.present && S.key.state === "unchecked") {  // once per page load: is the saved key accepted?

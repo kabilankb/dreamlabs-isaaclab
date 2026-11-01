@@ -49,6 +49,19 @@ class Bridge:
         self.process.terminate()
 
 
+def selftest(checkpoint: str, call_model: bool, dream_python: str | Path = DEFAULT_DREAM_PYTHON) -> dict:
+    """Ask the bridge for the connection test: the account's models, and (with ``call_model``) one real request.
+
+    The request sends grey camera frames and a neutral pose to Dream and **uses account credits**. Returns the bridge's
+    answer (``models``, and ``rows`` / ``width`` / ``ms`` for the request); raises BridgeError when Dream refuses.
+    """
+    bridge = Bridge(dream_python)
+    try:
+        return bridge.call(op="selftest", checkpoint=checkpoint, call_model=call_model)
+    finally:
+        bridge.close()
+
+
 def jpeg_b64(image, size: tuple[int, int], quality: int = 90) -> str:
     """One camera frame (uint8 HxWx3 array) as the resized base64 JPEG Dream's ``set_observation`` takes."""
     from PIL import Image

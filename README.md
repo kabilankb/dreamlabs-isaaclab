@@ -1,5 +1,6 @@
 # dreamlabs-isaaclab
 
+> **Docs: https://kabilankb.github.io/dreamlabs-isaaclab/** (install, API key setup, launching the page, testing the API).
 > An independent project, not affiliated with Dream Labs. Third-party credits and licences: [NOTICE](NOTICE). Apache-2.0.
 > The YAM robots need [YAMLab](https://github.com/ARISE-Initiative/yamlab) on Isaac Sim 6; the reBot robots need
 > [rebot-duo-course](https://github.com/kabilankb/rebot-duo-course) (for its `rebot-sim-pipeline`). Both are optional: a
@@ -130,6 +131,17 @@ python -m dreamlabs_isaaclab.yam --task PutPotOnCooktop-v0 \
 Only one sim should use a key at a time: two clients on one account replace each other's sessions.
 
 Tests (no simulator needed): `pip install -e .[dev] && pytest`.
+
+## Test the Dream API
+
+```bash
+python -m dreamlabs_isaaclab.api_check                # your key saved? accepted by Dream? which models? (free)
+python -m dreamlabs_isaaclab.api_check --call-model   # plus one real request (uses account credits)
+```
+
+The same tests are buttons on the launcher page (**Check key**, **Test connection**, **Send a test request**). The request
+sends grey camera frames and a neutral pose and expects 48 rows of 7 values back; it checks the API, not the model's skill.
+Exit code 0 means every check that was run passed. See the [docs](https://kabilankb.github.io/dreamlabs-isaaclab/#test).
 
 ## The launcher page
 

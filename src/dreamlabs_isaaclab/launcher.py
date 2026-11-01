@@ -33,7 +33,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
 from dreamlabs_isaaclab import launch_spec
-from dreamlabs_isaaclab.client import Bridge
+from dreamlabs_isaaclab.client import Bridge, selftest
 
 PAGE = Path(__file__).with_name("launcher.html")
 #: An optional logo you supply (Dream Labs' own mark, shown by the API section). Not shipped with this package: it stays
@@ -125,6 +125,7 @@ class Launcher:
         self.models: dict = {"state": "idle", "items": [{"id": m, "owner": "public"} for m in launch_spec.DEFAULT_MODELS],
                              "error": None, "at": None}
         self.key_check: dict = {"state": "unchecked", "line": "Not checked yet"}
+        self.api_test: dict = {"state": "idle", "line": ""}
 
     # -- the key
     def key_status(self) -> dict:
@@ -152,6 +153,38 @@ class Launcher:
         self.key_check = {"state": "valid", "line": "Saved, and Dream accepted it"}
         self.refresh_models()
         return self.key_status()
+
+    # -- the connection test
+    def start_api_test(self, request: object) -> dict:
+        """Test the Dream connection in the background: models always, one real request when ``call_model``."""
+        request = request if isinstance(request, dict) else {}
+        call_model = request.get("call_model", False)
+        model = request.get("model") or launch_spec.DEFAULT_MODELS[0]
+        if not isinstance(call_model, bool) or not isinstance(model, str) or not launch_spec.MODEL_RE.match(model):
+            raise launch_spec.SpecError("call_model is true or false and model is a model id")
+        if not read_credentials().get("DREAM_API_KEY"):
+            raise launch_spec.SpecError("Save your Dream API key first")
+        with self.lock:
+            if self.run is not None and self.run["proc"].poll() is None:
+                raise launch_spec.SpecError("A run is going. Two clients on one key replace each other's sessions: "
+                                            "stop it first.")
+            if self.api_test["state"] == "running":
+                raise launch_spec.SpecError("A test is already running")
+            self.api_test = {"state": "running", "line": "Sending a test request…" if call_model else "Asking Dream…"}
+        threading.Thread(target=self._api_test, args=(model, call_model), daemon=True).start()
+        return self.api_test
+
+    def _api_test(self, model: str, call_model: bool) -> None:
+        try:
+            answer = selftest(model, call_model, self.paths.dream_python)
+            line = f"Dream answered: {len(answer['models'])} models on the account"
+            if call_model:
+                line += f"; {model} returned {answer['rows']} rows × {answer['width']} values in {answer['ms']:.0f} ms"
+            state = {"state": "ok", "line": line}
+        except Exception as error:  # noqa: BLE001 - shown on the page
+            state = {"state": "error", "line": f"{type(error).__name__}: {error}"[:300]}
+        with self.lock:
+            self.api_test = {**state, "at": time.time()}
 
     # -- the models
     def refresh_models(self) -> None:
@@ -348,7 +381,7 @@ def make_handler(launcher: Launcher, token: str, port: int):
             if path == "/api/state":
                 return self._json(200, {"robots": launcher.robots(), "key": launcher.key_status(),
                                         "models": launcher.models, "run": launcher.status(),
-                                        "logo": read_logo() is not None})
+                                        "logo": read_logo() is not None, "api_test": launcher.api_test})
             if path == "/api/log":
                 offset = dict(p.partition("=")[::2] for p in query.split("&") if p).get("offset", "0")
                 return self._json(200, launcher.log(int(offset) if offset.isdigit() else 0))
@@ -373,6 +406,8 @@ def make_handler(launcher: Launcher, token: str, port: int):
                     return self._json(200, launcher.set_key(body.get("key")))
                 if self.path == "/api/key/check":
                     return self._json(200, launcher.check_saved_key())
+                if self.path == "/api/test":
+                    return self._json(200, launcher.start_api_test(body))
                 if self.path == "/api/models/refresh":
                     launcher.refresh_models()
                     return self._json(200, launcher.models)

@@ -1,0 +1,340 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dreamlabs-isaaclab · install, API key, launcher, API test</title>
+<meta name="description" content="Run Dream Labs' Dream-1 in Isaac Lab scenes from a local launcher page: install, set up the API key, launch the page and test the Dream API.">
+<style>
+:root {
+  --paper: #fdfbf4; --paper-2: #f6f2e4; --ink: #1b1a17; --ink-2: #5d5a4f; --rule: #e4dfcc;
+  --peach: #ffb784; --peach-ink: #4a2a0f; --yellow: #ffe58a; --ok: #1f7a46; --bad: #b3261e; --warn: #8a5a00;
+  --radius: 14px; --pill: 999px;
+  --sans: "Figtree", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; scroll-padding-top: 76px; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 17px/1.62 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: var(--ink); text-decoration-color: #b7b09a; text-underline-offset: 3px; }
+a:hover { text-decoration-color: var(--ink); }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
+code { font: .88em var(--mono); background: var(--paper-2); border: 1px solid var(--rule); border-radius: 6px; padding: 1px 6px; }
+.skip { position: absolute; left: -999px; } .skip:focus { left: 12px; top: 12px; background: var(--ink); color: var(--paper); padding: 8px 14px; border-radius: 8px; z-index: 20; }
+
+header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.bar { max-width: 1180px; margin: 0 auto; padding: 13px 28px; display: flex; align-items: center; gap: 24px; }
+.brand { font-weight: 600; font-size: 19px; letter-spacing: -.01em; text-decoration: none; display: flex; gap: 10px; align-items: center; }
+.brand i { width: 12px; height: 12px; border-radius: 50%; background: var(--peach); box-shadow: 0 0 0 4px var(--yellow); }
+.spacer { flex: 1; }
+.pill { display: inline-flex; align-items: center; gap: 8px; border-radius: var(--pill); padding: 9px 18px; font: inherit; font-size: 15px; font-weight: 500; border: 1px solid var(--ink); background: transparent; color: var(--ink); text-decoration: none; cursor: pointer; }
+.pill:hover { background: var(--paper-2); }
+.pill.peach { background: var(--peach); border-color: var(--peach); color: var(--peach-ink); } .pill.peach:hover { filter: brightness(.96); }
+.pill.black { background: var(--ink); color: var(--paper); } .pill.black:hover { background: #33312b; }
+
+.wrap { max-width: 1180px; margin: 0 auto; padding: 0 28px 90px; display: grid; grid-template-columns: 210px minmax(0, 1fr); gap: 56px; }
+nav.side { position: sticky; top: 84px; align-self: start; padding-top: 40px; font-size: 15px; }
+nav.side a { display: block; text-decoration: none; padding: 5px 0 5px 14px; border-left: 2px solid var(--rule); color: var(--ink-2); }
+nav.side a:hover, nav.side a.on { color: var(--ink); border-left-color: var(--ink); }
+nav.side .grp { font: 500 12px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--ink-2); margin: 18px 0 4px 14px; }
+
+main { min-width: 0; }
+.hero { padding: 56px 0 28px; }
+h1 { font-weight: 300; font-size: clamp(40px, 6vw, 76px); line-height: 1.02; letter-spacing: -.035em; margin: 0 0 18px; }
+h1 mark { background: linear-gradient(transparent 62%, var(--yellow) 62%, var(--yellow) 94%, transparent 94%); color: inherit; padding: 0 .04em; }
+.lead { font-size: 21px; color: var(--ink-2); max-width: 46ch; margin: 0 0 24px; }
+.actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.demo { margin: 34px 0 0; border: 1px solid var(--rule); border-radius: var(--radius); overflow: hidden; background: #fff; }
+.demo img { display: block; width: 100%; height: auto; }
+.demo figcaption { padding: 12px 18px; font-size: 14.5px; color: var(--ink-2); border-top: 1px solid var(--rule); }
+
+section { padding: 56px 0 4px; border-top: 1px solid var(--rule); margin-top: 52px; }
+section:first-of-type { margin-top: 36px; }
+.num { font: 500 13px var(--mono); color: var(--ink-2); border: 1px solid var(--rule); border-radius: var(--pill); padding: 2px 10px; vertical-align: middle; margin-right: 10px; }
+h2 { font-weight: 400; font-size: 34px; letter-spacing: -.02em; margin: 0 0 14px; line-height: 1.15; }
+h3 { font-weight: 500; font-size: 21px; letter-spacing: -.01em; margin: 30px 0 8px; }
+p { margin: 0 0 14px; max-width: 74ch; }
+ul, ol { padding-left: 22px; max-width: 74ch; } li { margin: 4px 0; }
+.sub { color: var(--ink-2); }
+
+.code { position: relative; margin: 14px 0 18px; max-width: 80ch; }
+pre { font: 14px/1.55 var(--mono); background: #1b1a17; color: #f1eee2; padding: 16px 18px; padding-right: 74px; border-radius: 12px; overflow: auto; margin: 0; white-space: pre; }
+pre .c { color: #9a9684; } pre .o { color: #9be2b4; }
+.copy { position: absolute; top: 9px; right: 9px; font: 500 12.5px var(--sans); border: 1px solid #55524a; background: #2b2a26; color: #f1eee2; border-radius: var(--pill); padding: 4px 12px; cursor: pointer; }
+.copy:hover { background: #3a3832; }
+.note { border-left: 4px solid var(--yellow); background: var(--paper-2); padding: 12px 18px; border-radius: 0 10px 10px 0; margin: 16px 0; max-width: 74ch; font-size: 16px; }
+.note.warn { border-color: var(--peach); } .note.bad { border-color: var(--bad); background: #fdf1ef; }
+.note b:first-child { font-weight: 600; }
+
+table { border-collapse: collapse; width: 100%; max-width: 900px; font-size: 15.5px; margin: 14px 0 20px; background: #fff; border: 1px solid var(--rule); border-radius: 12px; overflow: hidden; display: block; overflow-x: auto; }
+th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--rule); vertical-align: top; }
+th { font-weight: 500; color: var(--ink-2); font-size: 13.5px; background: var(--paper-2); white-space: nowrap; }
+tr:last-child td { border-bottom: 0; }
+.ok { color: var(--ok); font-weight: 600; } .no { color: var(--bad); font-weight: 600; }
+
+.steps { counter-reset: step; list-style: none; padding: 0; max-width: 80ch; }
+.steps > li { counter-increment: step; position: relative; padding: 4px 0 14px 50px; margin: 0; }
+.steps > li::before { content: counter(step); position: absolute; left: 0; top: 2px; width: 32px; height: 32px; border-radius: 50%; background: var(--yellow); display: grid; place-items: center; font: 600 15px var(--mono); }
+.steps > li b { font-weight: 600; }
+
+footer { max-width: 1180px; margin: 0 auto; padding: 26px 28px 70px; color: var(--ink-2); font-size: 14px; border-top: 1px solid var(--rule); }
+
+@media (max-width: 920px) {
+  .wrap { grid-template-columns: 1fr; gap: 0; padding: 0 18px 70px; } nav.side { display: none; }
+  .bar { padding: 12px 18px; } h2 { font-size: 29px; } footer { padding: 24px 18px 60px; }
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#main">Skip to the content</a>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="#top"><i></i>dreamlabs-isaaclab</a>
+    <span class="spacer"></span>
+    <a class="pill" href="https://github.com/kabilankb/dreamlabs-isaaclab">GitHub</a>
+    <a class="pill peach" href="#install">Install</a>
+  </div>
+</header>
+
+<div class="wrap" id="top">
+<nav class="side" aria-label="On this page">
+  <div class="grp">Start</div>
+  <a href="#overview">Overview</a><a href="#install">1 · Install</a><a href="#api-key">2 · API key</a><a href="#launch">3 · Launch the page</a><a href="#test">4 · Test the API</a>
+  <div class="grp">Reference</div>
+  <a href="#robots">Robots &amp; results</a><a href="#trouble">Troubleshooting</a><a href="#privacy">Privacy &amp; safety</a><a href="#credits">Credits</a>
+</nav>
+
+<main id="main">
+  <div class="hero">
+    <h1>Run Dream-1<br>in Isaac Lab. <mark>Test it.</mark></h1>
+    <p class="lead">A local launcher page that starts Dream Labs' Dream-1 on simulated robot arms, and checks that your Dream API key and models work.</p>
+    <div class="actions"><a class="pill peach" href="#install">Install in one command</a><a class="pill black" href="#test">Test the Dream API</a></div>
+    <figure class="demo">
+      <a href="media/demo.mp4"><img src="media/demo.gif" alt="The launcher page picks the YAM apple-into-the-bowl robot; Isaac Lab then shows Dream-1 moving the arms to put an orange into the bowl." loading="lazy"></a>
+      <figcaption>The launcher starting a run: Dream-1 drives the YAM arms to put an orange into the bowl. One recorded zero-shot run; click for the full 74 s video.</figcaption>
+    </figure>
+  </div>
+
+  <section id="overview">
+    <h2>Overview</h2>
+    <p>Dream-1 is a hosted model: your simulator sends it camera frames and an instruction, and it answers with arm joint targets. <code>dreamlabs-isaaclab</code> connects that API to Isaac Lab scenes and gives you one page to choose the robot and the model, set the key, start a run, and test the connection.</p>
+    <table>
+      <thead><tr><th>You get</th><th>What it is</th></tr></thead>
+      <tbody>
+        <tr><td><b>Launcher page</b></td><td>Local web page (127.0.0.1 only): pick a robot, a model and an instruction; Launch and Stop; see progress and results; save and check your key; test the API.</td></tr>
+        <tr><td><b>Sim clients</b></td><td>Dream-1 driving the bimanual <b>reBot B601</b> and YAMLab's <b>YAM</b> in Isaac Lab, in Dream's own apple-into-the-bowl scene.</td></tr>
+        <tr><td><b>API test</b></td><td>Key check, model list and one real request, from the page or <code>python -m dreamlabs_isaaclab.api_check</code>.</td></tr>
+        <tr><td><b>Dataset tools</b></td><td>LeRobot v3 → v2.1 converter and validator for fine-tuning data (nothing is uploaded by them).</td></tr>
+      </tbody>
+    </table>
+    <p class="sub">An independent project, not affiliated with Dream Labs. It needs your own Dream account and API key, and an NVIDIA GPU machine with Isaac Sim 6 and Isaac Lab 3.</p>
+  </section>
+
+  <section id="install">
+    <h2><span class="num">1</span>Install</h2>
+    <h3>Requirements</h3>
+    <table>
+      <thead><tr><th>Needed</th><th>For</th><th>Notes</th></tr></thead>
+      <tbody>
+        <tr><td>Linux with an NVIDIA RTX GPU</td><td>Isaac Sim</td><td>Driver 580.95.05 or newer (the course page lists tested versions).</td></tr>
+        <tr><td>Isaac Sim 6 + Isaac Lab 3 in a conda env (default <code>env_yamlab6</code>)</td><td>the simulators</td><td>Installed as in the <a href="https://kabilankb.github.io/rebot-duo-course/">course</a>, Module 0. <b>The install script only checks this; it does not install it.</b></td></tr>
+        <tr><td>Python 3.10+</td><td>the launcher page</td><td>The page itself uses only the standard library.</td></tr>
+        <tr><td><a href="https://docs.astral.sh/uv/">uv</a> or Python 3.11–3.13</td><td>the Dream environment</td><td>Dream's library needs 3.11–3.13 and pins numpy/jax, so it lives in its own env, <code>~/dream-env</code>.</td></tr>
+        <tr><td>A Dream account and API key</td><td>every run</td><td>See <a href="#api-key">step 2</a>.</td></tr>
+        <tr><td><a href="https://github.com/ARISE-Initiative/yamlab">YAMLab</a> on Isaac Sim 6 (<code>~/yamlab6</code>)</td><td>YAM robots only</td><td>Optional. The script adds the apple-in-the-bowl task to it.</td></tr>
+        <tr><td><a href="https://github.com/kabilankb/rebot-duo-course">rebot-duo-course</a></td><td>reBot robots only</td><td>Optional. Its <code>rebot-sim-pipeline</code> has the reBot apple task.</td></tr>
+      </tbody>
+    </table>
+
+    <h3>One command</h3>
+    <div class="code"><pre><span class="c"># clone, then let the script install what is missing and open the launcher</span>
+git clone https://github.com/kabilankb/dreamlabs-isaaclab
+cd dreamlabs-isaaclab
+./launch.sh</pre><button class="copy" type="button">Copy</button></div>
+    <p><code>launch.sh</code> checks each step first, so it is safe to run again:</p>
+    <ol class="steps">
+      <li><b>Isaac Sim's Python.</b> Required. If it is missing the script stops and installs nothing.</li>
+      <li><b>The Dream environment.</b> Creates <code>~/dream-env</code> with uv and installs <code>dreamlabs</code>, <code>pyarrow</code> and <code>av</code>.</li>
+      <li><b>Your API key.</b> Only checks that one is saved. You add it in <a href="#api-key">step 2</a>.</li>
+      <li><b>Dream's MuJoCo-scene assets.</b> Converts the apple, bowl, banana, orange, bottle and plate to USD in <code>~/.dreamlabs-isaaclab/assets</code>.</li>
+      <li><b>The YAMLab task.</b> Adds <code>PutAppleInBowl-v0</code> to <code>~/yamlab6</code> (three new files and two registrations; nothing else is edited).</li>
+      <li><b>The reBot task.</b> Looks for your <code>rebot-duo-course</code> checkout (optional).</li>
+      <li><b>The launcher page.</b> Starts it and prints its address.</li>
+    </ol>
+    <div class="code"><pre>./launch.sh --check          <span class="c"># report only; changes nothing (exit 1 if not ready)</span>
+./launch.sh --install-only   <span class="c"># install, don't start the page</span>
+./launch.sh --no-browser     <span class="c"># print the address instead of opening it</span>
+./launch.sh --port 9000      <span class="c"># another port (the next free one if taken)</span></pre><button class="copy" type="button">Copy</button></div>
+    <p>It never pipes a downloaded script into a shell and never prints or passes on your API key. Override locations with <code>DREAMLABS_ISAAC_PYTHON</code>, <code>DREAMLABS_DREAM_ENV</code>, <code>DREAMLABS_YAMLAB</code>, <code>DREAMLABS_ASSETS_DIR</code> and <code>DREAMLABS_COURSE_REPO</code>.</p>
+
+    <h3>By hand</h3>
+    <div class="code"><pre><span class="c"># 1. the Dream environment (Python 3.11 to 3.13)</span>
+uv venv --seed --python 3.12 ~/dream-env &amp;&amp; . ~/dream-env/bin/activate
+pip install --upgrade dreamlabs pyarrow av
+
+<span class="c"># 2. the package into the Isaac environment (numpy and Pillow only)</span>
+conda activate env_yamlab6 &amp;&amp; pip install -e .
+
+<span class="c"># 3. Dream's MuJoCo-scene assets, then a physics check of them</span>
+python -m dreamlabs_isaaclab.mujoco_scene_assets
+python -m dreamlabs_isaaclab.verify_assets --headless
+
+<span class="c"># 4. the YAMLab task (YAM robots)</span>
+yamlab6-task/apply.sh ~/yamlab6</pre><button class="copy" type="button">Copy</button></div>
+  </section>
+
+  <section id="api-key">
+    <h2><span class="num">2</span>Set up your Dream API key</h2>
+    <p>Every run calls Dream's hosted model, so it needs your Dream API key. Create one in your account at <a href="https://platform.dreamlabs.ai/api-keys">platform.dreamlabs.ai/api-keys</a>. It looks like <code>dl_live_…</code>.</p>
+    <div class="note warn"><b>Use the production site.</b> Keys work only on the site that made them (dev, staging and production are separate). A key from another site is refused with "This api key is not valid".</div>
+
+    <h3>Option A · on the launcher page (easiest)</h3>
+    <ol class="steps">
+      <li>Start the page (<a href="#launch">step 3</a>) and go to <b>API &amp; model</b>.</li>
+      <li>Paste the key in <b>Replace or add a key</b> and press <b>Verify &amp; save</b>.</li>
+      <li>The page asks Dream whether the key is accepted. Only if it is, it writes <code>~/.dreamlabs/credentials</code> (mode 600) and keeps a <code>.bak</code> of the old file. The key is never shown again: you will see only <code>dl_live_…</code> and its last four characters.</li>
+    </ol>
+
+    <h3>Option B · Dream's own setup script</h3>
+    <p>Dream's <b>Set up API</b> page (step 2 there) gives a script that asks for your key without echoing it, checks it, and writes the same file. Run it in your own terminal.</p>
+
+    <h3>Option C · by hand</h3>
+    <p>Create an empty file only you can read, then open it in an editor, so the key never appears on a command line or in your shell history:</p>
+    <div class="code"><pre>mkdir -p ~/.dreamlabs &amp;&amp; chmod 700 ~/.dreamlabs
+install -m 600 /dev/null ~/.dreamlabs/credentials    <span class="c"># an empty file, mode 600</span>
+$EDITOR ~/.dreamlabs/credentials                     <span class="c"># paste the four lines below</span></pre><button class="copy" type="button">Copy</button></div>
+    <div class="code"><pre>DREAM_GATEWAY_URL=https://api.dreamlabs.ai
+DREAM_API_URL=https://platform.dreamlabs.ai
+DREAM_DATA_URL=https://data.dreamlabs.ai
+DREAM_API_KEY=dl_live_paste_your_key_here</pre><button class="copy" type="button">Copy</button></div>
+
+    <div class="note bad"><b>Keep the key private.</b> Never paste it into a chat, an issue, a commit or a screenshot. It is stored only in <code>~/.dreamlabs/credentials</code>; this tool never puts it in a command line, an environment variable, a log, or a file in this repository. If it ever leaks, revoke it at <a href="https://platform.dreamlabs.ai/api-keys">platform.dreamlabs.ai/api-keys</a> and save a new one.</div>
+    <p class="sub">Model calls, including every simulator run, use your account's credits. On the page, <b>Send a test request</b> is labelled as the one test that does.</p>
+  </section>
+
+  <section id="launch">
+    <h2><span class="num">3</span>Launch the page</h2>
+    <div class="code"><pre>./launch.sh                                   <span class="c"># install what is missing, then start the page</span>
+<span class="c"># or, if everything is installed already:</span>
+python -m dreamlabs_isaaclab.launcher         <span class="c"># or: dreamlabs-launcher</span></pre><button class="copy" type="button">Copy</button></div>
+    <p>It prints an address and opens it in your browser:</p>
+    <div class="code"><pre><span class="o">Launcher: http://127.0.0.1:8765/?token=…</span>
+Keep this address private: it can start the simulators on this machine. Ctrl-C to stop.</pre></div>
+    <div class="note"><b>The address is the password.</b> The page listens on <code>127.0.0.1</code> only, and every request must carry the random token in that address. If you lose it, stop the launcher and start it again for a new one.</div>
+
+    <h3>Using the page</h3>
+    <ol class="steps">
+      <li><b>Robot.</b> Pick a card. A card says <i>Not ready</i> and names what is missing if this machine can't run it.</li>
+      <li><b>API &amp; model.</b> Check that your key is saved and accepted, test the connection (<a href="#test">step 4</a>), and choose a model: the public Dream-1 models and any fine-tune on your account, or type a model id.</li>
+      <li><b>Run.</b> Write the instruction (example chips help), choose episodes, a first layout seed, window or headless. <b>Show the command</b> prints exactly what will run.</li>
+      <li><b>Launch.</b> Starts Isaac Lab (or MuJoCo) with Dream-1 driving the arms. <b>Output</b> shows progress and a results table; <b>Stop</b> ends the simulator and its bridge together.</li>
+    </ol>
+    <p>Each run keeps its command, full log, <code>results.json</code> and (for the reBot) a video in <code>~/.dreamlabs-isaaclab/runs/&lt;time&gt;-&lt;robot&gt;/</code>. Only one run goes at a time, because two simulators on one key replace each other's sessions.</p>
+  </section>
+
+  <section id="test">
+    <h2><span class="num">4</span>Test the Dream API</h2>
+    <p>Work up this ladder. Each rung proves one more thing, and the first three cost nothing.</p>
+    <table>
+      <thead><tr><th>#</th><th>Test</th><th>Where</th><th>Proves</th><th>Cost</th></tr></thead>
+      <tbody>
+        <tr><td>1</td><td><b>Check key</b></td><td>page · <code>API &amp; model</code></td><td>The saved key is accepted by Dream (a request to Dream's key check).</td><td>free</td></tr>
+        <tr><td>2</td><td><b>Test connection</b></td><td>page · <code>api_check</code></td><td>Your Dream environment works and Dream lists your models.</td><td>free</td></tr>
+        <tr><td>3</td><td><b>Send a test request</b></td><td>page · <code>api_check --call-model</code></td><td>The model answers a real request: 48 rows of 7 joint values, with its latency.</td><td class="no">credits</td></tr>
+        <tr><td>4</td><td><b>Dream's own sim</b></td><td>page · <i>YAM · Dream's MuJoCo sim</i></td><td>The whole loop works in the simulator Dream built the model for.</td><td class="no">credits</td></tr>
+        <tr><td>5</td><td><b>Your Isaac Lab scene</b></td><td>page · <i>YAM · apple into the bowl</i></td><td>Dream-1 completes a task in Isaac Lab through this package.</td><td class="no">credits</td></tr>
+      </tbody>
+    </table>
+
+    <h3>From the command line</h3>
+    <div class="code"><pre>python -m dreamlabs_isaaclab.api_check                <span class="c"># key + models (free)</span>
+python -m dreamlabs_isaaclab.api_check --call-model   <span class="c"># plus one real request (uses credits)</span></pre><button class="copy" type="button">Copy</button></div>
+    <p>A passing run looks like this (this is real output; the key shows only its last four characters):</p>
+    <div class="code"><pre>Dream API check
+  <span class="o">PASS</span>  a key is saved in ~/.dreamlabs/credentials (dl_live_…abcd)
+  <span class="o">PASS</span>  Dream accepted the key
+  <span class="o">PASS</span>  2 models on the account: dreamlabs/dream-1-beta, dreamlabs/dream-1-beta-flash
+  <span class="o">PASS</span>  dreamlabs/dream-1-beta answered one request: 48 rows x 7 values in 2632 ms
+All checks passed.</pre></div>
+    <p>Exit code 0 means every check that was run passed, so you can use it in a script. The test request sends grey camera frames and a neutral pose, not a real scene; it checks the API, not the model's skill. The first request is slow (a few seconds) while Dream starts the model; later ones in a run take about half a second.</p>
+
+    <h3>From the page</h3>
+    <p>In <b>API &amp; model</b>, <b>Test connection</b> and <b>Send a test request</b> run the same checks and print the result under the buttons: <i>"Dream answered: 2 models on the account; dreamlabs/dream-1-beta returned 48 rows × 7 values in 2889 ms"</i>. The second button is dark and labelled as using credits. Tests are refused while a run is going.</p>
+
+    <h3>A first real run</h3>
+    <ol class="steps">
+      <li>Pick <b>YAM · Dream's MuJoCo sim</b>, keep "put apple into the bowl", press <b>Launch</b>. A MuJoCo window opens and the arms move the apple into the bowl. This is Dream's own simulator, so a failure here points at your key, network or install, not at Isaac Lab.</li>
+      <li>Then pick <b>YAM · apple into the bowl</b> (Isaac Lab). A successful episode prints <code>[EVAL] … SUCCESS</code> in the log.</li>
+    </ol>
+  </section>
+
+  <section id="robots">
+    <h2>Robots &amp; results</h2>
+    <table>
+      <thead><tr><th>Robot</th><th>Simulator</th><th>Needs</th><th>What we saw (zero-shot)</th></tr></thead>
+      <tbody>
+        <tr><td>YAM · Dream's MuJoCo sim</td><td>MuJoCo</td><td>Dream env only</td><td class="ok">Apple into the bowl: succeeded.</td></tr>
+        <tr><td>YAM · apple into the bowl</td><td>Isaac Lab (YAMLab)</td><td>YAMLab + assets</td><td class="ok">2 of 2 succeeded, in about 9 s of sim time each.</td></tr>
+        <tr><td>YAM · gear assembly</td><td>Isaac Lab (YAMLab)</td><td>YAMLab + gear assets</td><td class="no">1 run, never picked the gear (a precision task).</td></tr>
+        <tr><td>reBot B601 duo · apple into the bowl</td><td>Isaac Lab</td><td>rebot-duo-course</td><td class="no">0 of 3. Grasps and carries, but does not place reliably.</td></tr>
+        <tr><td>reBot B601 duo · stationery</td><td>Isaac Lab</td><td>rebot-duo-course</td><td class="no">2 runs, nothing reached the cup (it grasped and lifted objects).</td></tr>
+      </tbody>
+    </table>
+    <div class="note warn"><b>Read these as samples, not success rates.</b> They are single episodes, and the same seed can give different outcomes because the model samples. The YAM is the arm Dream-1 was built for; the reBot is a robot it has not seen, which is what fine-tuning on your own data is for. The dataset tools in this package prepare that data; they upload nothing.</div>
+  </section>
+
+  <section id="trouble">
+    <h2>Troubleshooting</h2>
+    <table>
+      <thead><tr><th>You see</th><th>Why, and what to do</th></tr></thead>
+      <tbody>
+        <tr><td>"This api key is not valid" / "Dream refused the key (HTTP 401)"</td><td>The key is wrong, revoked, or from a different Dream site. Create a new one at <a href="https://platform.dreamlabs.ai/api-keys">platform.dreamlabs.ai/api-keys</a> and save it on the page.</td></tr>
+        <tr><td>"Could not reach platform.dreamlabs.ai"</td><td>No network or a proxy is in the way. The key check needs an HTTPS connection to Dream.</td></tr>
+        <tr><td>The first request takes several seconds</td><td>Normal: Dream starts the model on the first call (<code>pool_warming</code>); the bridge waits and retries for you.</td></tr>
+        <tr><td>"session replaced … continuing on the new one" in the log</td><td>Dream restarted the model's session. Harmless; the bridge carries on. It happens mostly in the first calls.</td></tr>
+        <tr><td>A robot card says <i>Not ready</i></td><td>It names what is missing: a path (set the matching <code>DREAMLABS_…</code> variable), the converted assets (<code>python -m dreamlabs_isaaclab.mujoco_scene_assets</code>), or a YAMLab / course checkout.</td></tr>
+        <tr><td>"A run is already going"</td><td>One run at a time, and tests wait for it too. Press <b>Stop</b>.</td></tr>
+        <tr><td>No Isaac window appears</td><td>The simulator opens on your <code>DISPLAY</code>. Over SSH or without a desktop choose <b>Headless</b>.</td></tr>
+        <tr><td>"Not starting: … problem(s)" from <code>launch.sh</code></td><td>Run <code>./launch.sh --check</code> to see each step. If Isaac Sim's Python is missing, install Isaac Sim and Isaac Lab first (course, Module 0).</td></tr>
+        <tr><td>The page says 403 / "open the address the launcher printed"</td><td>You opened the page without its token, or the launcher was restarted. Use the address printed in the terminal.</td></tr>
+        <tr><td>Port 8765 is busy</td><td>It takes the next free port and prints it. Another launcher may already be running.</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="privacy">
+    <h2>Privacy &amp; safety</h2>
+    <ul>
+      <li><b>What goes to Dream.</b> Every model call sends the camera frames of the simulated scene and your instruction to Dream's servers, and uses your credits. The dataset tools send nothing; uploading data for a fine-tune is a separate step you would do on purpose.</li>
+      <li><b>Your key.</b> Stored mode 600 in <code>~/.dreamlabs/credentials</code>; read only by Dream's library; masked on the page; never in a command line, an environment variable, a log, a run folder, or this repository. The tests refuse to run if they touch the real file.</li>
+      <li><b>The page.</b> Listens on 127.0.0.1 only; needs the token on every request; accepts changes only as JSON with a matching <code>Host</code> and <code>Origin</code>, so another web page cannot drive it; builds commands from validated values and runs them without a shell; refuses a second run at once. Anyone who holds the address can start simulators on this machine, so keep it private.</li>
+      <li><b>No real robots.</b> Nothing here talks to hardware.</li>
+    </ul>
+  </section>
+
+  <section id="credits">
+    <h2>Credits &amp; licence</h2>
+    <p>Apache-2.0 (see <a href="https://github.com/kabilankb/dreamlabs-isaaclab/blob/main/LICENSE">LICENSE</a>). This is an independent project and is not affiliated with, endorsed by or sponsored by Dream Labs; the Dream Labs name and logo belong to Dream Labs. The YAM task adapts <a href="https://github.com/ARISE-Initiative/yamlab">YAMLab</a> (MIT, © Tianyuan Dai). The scene objects follow the yam_mujoco example in Dream's <code>dreamlabs</code> package (MIT, I2RT Robotics); the apple and banana scans are from the YCB set (CC BY 4.0) and are converted on your machine, not redistributed. Full notices: <a href="https://github.com/kabilankb/dreamlabs-isaaclab/blob/main/NOTICE">NOTICE</a>.</p>
+    <p class="sub">Related: the <a href="https://kabilankb.github.io/rebot-duo-course/">reBot Duo course</a> this grew out of.</p>
+  </section>
+</main>
+</div>
+<footer>dreamlabs-isaaclab · an independent project, not affiliated with Dream Labs · <a href="https://github.com/kabilankb/dreamlabs-isaaclab">source</a></footer>
+
+<script>
+"use strict";
+for (const button of document.querySelectorAll(".copy")) {
+  button.addEventListener("click", async () => {
+    const text = button.parentElement.querySelector("pre").innerText;
+    try { await navigator.clipboard.writeText(text); button.textContent = "Copied"; }
+    catch (_) { button.textContent = "Press Ctrl+C"; const r = document.createRange(); r.selectNodeContents(button.parentElement.querySelector("pre")); getSelection().removeAllRanges(); getSelection().addRange(r); }
+    setTimeout(() => (button.textContent = "Copy"), 1600);
+  });
+}
+const links = [...document.querySelectorAll("nav.side a")], targets = links.map((a) => document.querySelector(a.getAttribute("href")));
+const mark = () => { let on = 0; targets.forEach((t, i) => { if (t && t.getBoundingClientRect().top < 140) on = i; }); links.forEach((a, i) => a.classList.toggle("on", i === on)); };
+addEventListener("scroll", mark, { passive: true }); mark();
+</script>
+</body>
+</html>

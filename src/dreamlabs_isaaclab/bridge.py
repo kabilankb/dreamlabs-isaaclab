@@ -8,6 +8,7 @@ as a subprocess and talks to it with one JSON object per line over stdin / stdou
     {"op": "act",     "commanded": {"q_l_chunk": [...], "q_r_chunk": [...]} | null}    -> {"ok": true, "chunks": ...}
     {"op": "reset"}                                                                      -> {"ok": true}
     {"op": "models"}                                                -> {"ok": true, "models": [{"id": ...}, ...]}
+    {"op": "selftest", "checkpoint": ..., "call_model": bool}     -> {"ok": true, "models": [...], "rows", "width", "ms"}
     {"op": "close"}
 
 Everything the libraries print goes to stderr; stdout carries the protocol only. The API key is read from
@@ -52,6 +53,30 @@ def with_retry(call, tries: int = 30):
             time.sleep(wait)
 
 
+def model_call(client, checkpoint: str) -> dict:
+    """One request the way yam.py makes it (the YAM station keys), on grey frames; returns the chunk's shape and time."""
+    import base64
+    import io
+
+    from PIL import Image
+
+    buffer = io.BytesIO()
+    Image.new("RGB", (320, 176), (110, 110, 110)).save(buffer, format="JPEG", quality=85)
+    frame = base64.b64encode(buffer.getvalue()).decode("ascii")
+    client.policy({"checkpoint": checkpoint, "timeout_ms": 60000, "strict": False, "action_hz": 20, "_record": False})
+    state = {"robot.arm": "yam", "robot.exec_head": "joint", "robot.max_joint_vel_rad_s": 0.0, "robot.gripper_open": 1.0}
+    for slot in ("arm_l", "arm_r"):
+        state[f"state.{slot}.joint_pos"] = np.zeros(6)
+        state[f"state.{slot}.gripper_pos"] = np.array([1.0])
+    state["prompt"] = "put apple into the bowl"
+    client.set_observation({f"image_window.{camera}": frame for camera in ("top", "left", "right")}, state, timestamp=0.0)
+    started = time.time()
+    action = with_retry(lambda: client.get_action())
+    rows = np.asarray(action["q_l_chunk"])
+    client.reset_episode()
+    return {"rows": int(rows.shape[0]), "width": int(rows.shape[1]), "ms": (time.time() - started) * 1000.0}
+
+
 def main() -> None:
     client = dream.DreamClient()
     for line in sys.stdin:
@@ -87,6 +112,13 @@ def main() -> None:
                 models = [{"id": m.id, "owner": m.owner, "embodiment": m.embodiment, "servable": m.servable}
                           for m in client.get_models()]
                 reply(ok=True, models=models)
+            elif op == "selftest":
+                # The connection test of the launcher page and of api_check: your key and models, and (when asked) one
+                # real request with grey camera frames on a neutral YAM pose, which uses account credits.
+                result = {"models": [m.id for m in client.get_models()]}
+                if request.get("call_model"):
+                    result.update(model_call(client, request["checkpoint"]))
+                reply(ok=True, **result)
             elif op == "reset":
                 client.reset_episode()
                 reply(ok=True)
