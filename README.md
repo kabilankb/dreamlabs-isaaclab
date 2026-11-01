@@ -5,6 +5,14 @@
 > [rebot-duo-course](https://github.com/kabilankb/rebot-duo-course) (for its `rebot-sim-pipeline`). Both are optional: a
 > robot whose checkout is missing shows as "not ready" on the launcher page.
 
+## Demo
+
+[![Dream-1 putting an orange into the bowl on the YAM in Isaac Lab, started from the launcher page](media/demo.gif)](media/demo.mp4)
+
+The launcher page picks the **YAM · apple into the bowl** robot and the instruction "put orange into the bowl"; **Launch**
+starts Isaac Lab with Dream-1 driving the arms, and the clip ends with the orange in the bowl. One recorded run, zero-shot
+(the address bar is blurred). Click the animation for the full 74 s video: [`media/demo.mp4`](media/demo.mp4).
+
 Run Dream Labs' **Dream-1** in Isaac Lab scenes: the bimanual **Seeed reBot B601** of this course, and **YAMLab's
 YAM** (Dream's native robot, used as a control).
 
