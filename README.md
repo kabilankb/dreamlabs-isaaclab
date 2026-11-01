@@ -6,6 +6,9 @@
 > [rebot-duo-course](https://github.com/kabilankb/rebot-duo-course) (for its `rebot-sim-pipeline`). Both are optional: a
 > robot whose checkout is missing shows as "not ready" on the launcher page.
 
+> **Tested on a Dell Pro Max 16 Plus** (NVIDIA RTX PRO 5000 Blackwell laptop GPU): the simulator and launcher run locally on
+> the Dell; only the model request goes to Dream's hosted API.
+
 ## Demo
 
 [![Dream-1 putting an orange into the bowl on the YAM in Isaac Lab, started from the launcher page](media/demo.gif)](media/demo.mp4)
