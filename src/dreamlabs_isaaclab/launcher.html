@@ -1,0 +1,401 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>dreamlabs-isaaclab · launcher</title>
+<style>
+:root {
+  --paper: #fdfbf4; --paper-2: #f6f2e4; --ink: #1b1a17; --ink-2: #5d5a4f; --rule: #e4dfcc;
+  --peach: #ffb784; --peach-ink: #4a2a0f; --yellow: #ffe58a; --ok: #1f7a46; --bad: #b3261e; --warn: #8a5a00;
+  --radius: 14px; --pill: 999px;
+  --sans: "Figtree", "Inter", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono: ui-monospace, "SF Mono", "JetBrains Mono", Menlo, Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+body { margin: 0; background: var(--paper); color: var(--ink); font: 16px/1.5 var(--sans); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; border-radius: 6px; }
+
+header.top { position: sticky; top: 0; z-index: 5; background: color-mix(in srgb, var(--paper) 92%, transparent);
+  backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.bar { max-width: 1180px; margin: 0 auto; padding: 14px 28px; display: flex; align-items: center; gap: 28px; }
+.brand { font-weight: 600; font-size: 19px; letter-spacing: -.01em; text-decoration: none; display: flex; gap: 10px; align-items: center; }
+.brand i { width: 12px; height: 12px; border-radius: 50%; background: var(--peach); box-shadow: 0 0 0 4px var(--yellow); }
+nav { display: flex; gap: 26px; margin-left: 12px; }
+nav a { text-decoration: none; font-size: 15px; padding: 4px 0; border-bottom: 2px solid transparent; }
+nav a:hover { border-color: var(--ink); }
+.spacer { flex: 1; }
+
+.pill { display: inline-flex; align-items: center; gap: 8px; border-radius: var(--pill); padding: 10px 20px; font: inherit; font-size: 15px;
+  font-weight: 500; border: 1px solid var(--ink); background: transparent; color: var(--ink); cursor: pointer; text-decoration: none; }
+.pill:hover { background: var(--paper-2); }
+.pill.peach { background: var(--peach); border-color: var(--peach); color: var(--peach-ink); }
+.pill.peach:hover { filter: brightness(.96); }
+.pill.black { background: var(--ink); color: var(--paper); }
+.pill.black:hover { background: #33312b; }
+.pill.sm { padding: 7px 14px; font-size: 14px; }
+.pill:disabled { opacity: .45; cursor: not-allowed; filter: none; }
+.dot { width: 9px; height: 9px; border-radius: 50%; background: var(--ink-2); flex: none; }
+.dot.ok { background: var(--ok); } .dot.bad { background: var(--bad); } .dot.warn { background: #d9961a; }
+
+main { max-width: 1180px; margin: 0 auto; padding: 0 28px 80px; }
+.hero { padding: 64px 0 36px; display: grid; grid-template-columns: 1.5fr 1fr; gap: 48px; align-items: end; }
+h1 { font-weight: 300; font-size: clamp(42px, 6.4vw, 84px); line-height: 1.02; letter-spacing: -.035em; margin: 0; }
+h1 mark { background: linear-gradient(transparent 62%, var(--yellow) 62%, var(--yellow) 94%, transparent 94%); color: inherit; padding: 0 .04em; }
+.hero p { font-size: 19px; color: var(--ink-2); margin: 0 0 22px; max-width: 34ch; }
+.hero .actions { display: flex; gap: 12px; flex-wrap: wrap; }
+
+section.step { border-top: 1px solid var(--rule); padding: 40px 0 8px; scroll-margin-top: 70px; }
+.step-head { display: flex; align-items: baseline; gap: 16px; margin-bottom: 22px; }
+.num { font: 500 14px var(--mono); color: var(--ink-2); border: 1px solid var(--rule); border-radius: var(--pill); padding: 2px 10px; }
+h2 { font-weight: 400; font-size: 32px; letter-spacing: -.02em; margin: 0; }
+.via { margin-left: auto; display: inline-flex; align-items: center; gap: 10px; font-size: 13px; color: var(--ink-2); }
+.via img { height: 22px; width: auto; display: block; }
+.lede { color: var(--ink-2); margin: -10px 0 22px; max-width: 70ch; }
+
+.robots { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.robot { text-align: left; background: #fff; border: 1.5px solid var(--rule); border-radius: var(--radius); padding: 20px; cursor: pointer;
+  font: inherit; color: inherit; display: flex; flex-direction: column; gap: 10px; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.robot:hover { border-color: #bdb79f; transform: translateY(-1px); }
+.robot[aria-checked="true"] { border-color: var(--ink); box-shadow: 0 0 0 3px var(--yellow); }
+.robot[aria-disabled="true"] { opacity: .6; }
+.robot h3 { margin: 0; font-size: 21px; font-weight: 500; letter-spacing: -.01em; }
+.robot p { margin: 0; color: var(--ink-2); font-size: 15px; }
+.tags { display: flex; gap: 8px; flex-wrap: wrap; margin-top: auto; padding-top: 6px; }
+.tag { font-size: 12.5px; border-radius: var(--pill); padding: 3px 10px; background: var(--paper-2); border: 1px solid var(--rule); display: inline-flex; gap: 6px; align-items: center; }
+.miss { font-size: 13px; color: var(--bad); margin: 0; }
+
+.panel { background: #fff; border: 1px solid var(--rule); border-radius: var(--radius); padding: 22px; }
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+label, .lab { display: block; font-size: 13.5px; font-weight: 500; color: var(--ink-2); margin-bottom: 6px; }
+input[type=text], input[type=password], input[type=number], select, textarea { width: 100%; font: inherit; font-size: 15px; color: var(--ink);
+  background: var(--paper); border: 1.5px solid var(--rule); border-radius: 10px; padding: 10px 12px; }
+input:focus, select:focus, textarea:focus { border-color: var(--ink); outline: none; box-shadow: 0 0 0 3px var(--yellow); }
+textarea { resize: vertical; min-height: 78px; }
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row > .grow { flex: 1; min-width: 200px; }
+.keyline { display: flex; align-items: center; gap: 10px; font-size: 15px; flex-wrap: wrap; }
+.keyline code { font: 14px var(--mono); background: var(--paper-2); padding: 3px 8px; border-radius: 6px; }
+.hint { font-size: 13px; color: var(--ink-2); margin: 8px 0 0; }
+.hint b { color: var(--ink); font-weight: 600; }
+.chips { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.chip { font: inherit; font-size: 13px; border: 1px solid var(--rule); background: var(--paper); border-radius: var(--pill); padding: 5px 12px; cursor: pointer; color: var(--ink); }
+.chip:hover { border-color: var(--ink); }
+.toggle { display: inline-flex; align-items: center; gap: 10px; font-size: 15px; cursor: pointer; color: var(--ink); font-weight: 400; margin: 0; }
+.toggle input { width: 18px; height: 18px; accent-color: var(--ink); }
+.seg { display: inline-flex; border: 1.5px solid var(--ink); border-radius: var(--pill); overflow: hidden; }
+.seg button { font: inherit; font-size: 14px; border: 0; background: transparent; padding: 8px 18px; cursor: pointer; color: var(--ink); }
+.seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
+.notice { border-left: 4px solid var(--yellow); background: var(--paper-2); padding: 12px 16px; border-radius: 0 10px 10px 0; font-size: 14px; color: var(--ink-2); margin-top: 16px; }
+.notice.bad { border-color: var(--bad); color: var(--bad); background: #fdf1ef; }
+
+.launchbar { position: sticky; bottom: 0; background: color-mix(in srgb, var(--paper) 94%, transparent); backdrop-filter: blur(8px);
+  border-top: 1px solid var(--rule); margin: 40px -28px 0; padding: 16px 28px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; z-index: 4; }
+.launchbar .summary { flex: 1; min-width: 220px; font-size: 14.5px; color: var(--ink-2); }
+.launchbar .summary b { color: var(--ink); font-weight: 600; }
+details.cmd { margin-top: 18px; }
+details.cmd summary { cursor: pointer; font-size: 14px; color: var(--ink-2); }
+pre { font: 13px/1.5 var(--mono); background: #1b1a17; color: #f1eee2; padding: 14px 16px; border-radius: 10px; overflow: auto; margin: 10px 0 0; white-space: pre-wrap; word-break: break-word; }
+pre.log { max-height: 280px; min-height: 90px; }
+
+.status { display: inline-flex; align-items: center; gap: 8px; font-weight: 500; }
+table { border-collapse: collapse; width: 100%; font-size: 14.5px; margin-top: 14px; }
+th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rule); }
+th { font-weight: 500; color: var(--ink-2); font-size: 13px; }
+td.ok { color: var(--ok); font-weight: 600; } td.bad { color: var(--bad); font-weight: 600; }
+footer { max-width: 1180px; margin: 0 auto; padding: 24px 28px 60px; color: var(--ink-2); font-size: 13.5px; border-top: 1px solid var(--rule); }
+.toast { position: fixed; left: 50%; bottom: 96px; transform: translateX(-50%); background: var(--ink); color: var(--paper); padding: 10px 18px;
+  border-radius: var(--pill); font-size: 14px; z-index: 10; opacity: 0; pointer-events: none; transition: opacity .2s; max-width: 90vw; }
+.toast.show { opacity: 1; }
+.toast.bad { background: var(--bad); }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 900px) {
+  nav { display: none; }
+  .hero { grid-template-columns: 1fr; gap: 24px; padding-top: 40px; }
+  .robots, .grid2 { grid-template-columns: 1fr; }
+  .bar, main, footer { padding-left: 18px; padding-right: 18px; }
+  .launchbar { margin-left: -18px; margin-right: -18px; padding-left: 18px; padding-right: 18px; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="bar">
+    <a class="brand" href="#top"><i></i>dreamlabs-isaaclab</a>
+    <nav aria-label="Sections">
+      <a href="#robot">Robot</a><a href="#api">API &amp; model</a><a href="#run">Run</a><a href="#output">Output</a>
+    </nav>
+    <span class="spacer"></span>
+    <a class="pill sm" href="#api" id="keyPill"><span class="dot" id="keyDot"></span><span id="keyPillText">Checking key…</span></a>
+  </div>
+</header>
+
+<main id="top">
+  <div class="hero">
+    <h1>Pick a robot.<br>Pick a model.<br><mark>Launch.</mark></h1>
+    <div>
+      <p>Dream-1 driving simulated arms in Isaac Lab and MuJoCo, started from one page on this machine.</p>
+      <div class="actions"><a class="pill peach" href="#robot">Choose a robot</a><a class="pill black" href="#api">Set the API key</a></div>
+    </div>
+  </div>
+
+  <section class="step" id="robot">
+    <div class="step-head"><span class="num">01</span><h2>Robot</h2></div>
+    <div class="robots" role="radiogroup" aria-label="Robot" id="robots"></div>
+  </section>
+
+  <section class="step" id="api">
+    <div class="step-head"><span class="num">02</span><h2>API &amp; model</h2><span class="via" id="via" hidden>via <img id="logo" alt="Dream Labs" height="22"></span></div>
+    <p class="lede">Runs call Dream's hosted model. Each model call sends the camera frames and your instruction to Dream.</p>
+    <div class="grid2">
+      <div class="panel">
+        <span class="lab">Dream API key</span>
+        <div class="keyline" aria-live="polite"><span class="dot" id="keyDot2"></span><code id="keyMasked">none</code><span id="keyLine"></span></div>
+        <div class="row" style="margin-top:12px">
+          <button class="pill sm" id="checkKey" type="button">Check key</button>
+        </div>
+        <form id="keyForm" autocomplete="off" style="margin-top:16px">
+          <label for="keyInput">Replace or add a key</label>
+          <div class="row">
+            <input class="grow" id="keyInput" type="password" autocomplete="off" spellcheck="false" placeholder="dl_live_…">
+            <button class="pill sm black" type="submit">Verify &amp; save</button>
+          </div>
+          <p class="hint">The key is checked with Dream, then saved to <b id="keyFile">~/.dreamlabs/credentials</b> (mode 600). It is never shown again, never put in a command and never logged.</p>
+        </form>
+      </div>
+      <div class="panel">
+        <label for="model">Model</label>
+        <div class="row">
+          <select class="grow" id="model"></select>
+          <button class="pill sm" id="refreshModels" type="button">Refresh</button>
+        </div>
+        <p class="hint" id="modelHint"></p>
+        <div style="margin-top:14px">
+          <label for="customModel">Or a model id of your own (a fine-tune)</label>
+          <input id="customModel" type="text" spellcheck="false" placeholder="dream-1-ft:…">
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="step" id="run">
+    <div class="step-head"><span class="num">03</span><h2>Run</h2></div>
+    <div class="panel">
+      <label for="instruction">Instruction</label>
+      <textarea id="instruction" maxlength="300"></textarea>
+      <div class="chips" id="presets" aria-label="Example instructions"></div>
+      <div class="grid2" style="margin-top:20px">
+        <div id="episodesWrap"><label for="episodes">Episodes</label><input id="episodes" type="number" min="1" max="50" value="1"></div>
+        <div id="seedWrap"><label for="seed">First layout seed</label><input id="seed" type="number" min="0" value="1000"></div>
+        <div id="secondsWrap" hidden><label for="seconds">Seconds</label><input id="seconds" type="number" min="10" max="3600" value="90"></div>
+        <div>
+          <span class="lab">Window</span>
+          <div class="seg" role="group" aria-label="Window">
+            <button type="button" id="guiOn" aria-pressed="true">Watch it</button>
+            <button type="button" id="guiOff" aria-pressed="false">Headless</button>
+          </div>
+        </div>
+      </div>
+      <div class="row" style="margin-top:18px">
+        <label class="toggle" id="realtimeWrap"><input type="checkbox" id="realtime"> Pace to real time (easier to watch, slower)</label>
+      </div>
+      <div class="notice" id="robotNotes"></div>
+      <div class="notice bad" id="blocker" hidden></div>
+      <details class="cmd"><summary>Show the command</summary><pre id="cmdText">Choose a robot first.</pre></details>
+    </div>
+  </section>
+
+  <section class="step" id="output">
+    <div class="step-head"><span class="num">04</span><h2>Output</h2></div>
+    <div class="panel">
+      <div class="status" aria-live="polite"><span class="dot" id="runDot"></span><span id="runState">No run yet</span></div>
+      <table id="resultTable" hidden><thead><tr><th>Episode</th><th>Result</th><th>Steps</th><th>Model calls</th><th>Mean call</th></tr></thead><tbody></tbody></table>
+      <pre class="log" id="log" aria-label="Run progress">Nothing has run.</pre>
+      <p class="hint" id="runDir"></p>
+    </div>
+  </section>
+
+  <div class="launchbar">
+    <div class="summary" id="summary">Choose a robot and a model.</div>
+    <button class="pill" id="stop" type="button" disabled>Stop</button>
+    <button class="pill peach" id="launch" type="button" disabled>Launch</button>
+  </div>
+</main>
+
+<footer>
+  An independent launcher for <code>dreamlabs-isaaclab</code>, not an official Dream Labs product and not affiliated with Dream Labs; the Dream Labs name and logo belong to Dream Labs. It listens on 127.0.0.1 only; keep this
+  page's address private, because it can start simulators on this machine. Only one run at a time: two simulators on one key replace each other's sessions.
+</footer>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+"use strict";
+const TOKEN = new URLSearchParams(location.search).get("token") || "";
+const $ = (id) => document.getElementById(id);
+const S = { robots: [], robot: null, gui: true, models: null, key: null, run: { state: "idle" }, logOffset: 0, logLines: [], dirty: false };
+
+async function api(path, body) {
+  const options = { headers: { "X-Token": TOKEN } };
+  if (body !== undefined) { options.method = "POST"; options.headers["Content-Type"] = "application/json"; options.body = JSON.stringify(body); }
+  const response = await fetch(path, options);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(data.error || `HTTP ${response.status}`);
+  return data;
+}
+function toast(text, bad = false) {
+  const t = $("toast"); t.textContent = text; t.className = "toast show" + (bad ? " bad" : "");
+  clearTimeout(toast.timer); toast.timer = setTimeout(() => (t.className = "toast"), 4200);
+}
+function el(tag, props = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(props)) { if (k === "class") node.className = v; else if (k.startsWith("on")) node.addEventListener(k.slice(2), v); else node.setAttribute(k, v); }
+  for (const c of children) node.append(c);
+  return node;
+}
+
+/* ---- robots ---- */
+function renderRobots() {
+  const root = $("robots"); root.replaceChildren();
+  for (const r of S.robots) {
+    const selected = S.robot && S.robot.id === r.id;
+    const card = el("button", { class: "robot", type: "button", role: "radio", "aria-checked": String(!!selected), "aria-disabled": String(!r.ready) },
+      el("h3", {}, r.name), el("p", {}, r.tagline),
+      ...(r.ready ? [] : [el("p", { class: "miss" }, "Missing: " + r.missing.join("; "))]),
+      el("div", { class: "tags" },
+        el("span", { class: "tag" }, el("span", { class: "dot " + (r.ready ? "ok" : "bad") }), r.ready ? "Ready" : "Not ready"),
+        el("span", { class: "tag" }, r.simulator)));
+    card.addEventListener("click", () => selectRobot(r.id));
+    root.append(card);
+  }
+}
+function selectRobot(id) {
+  const next = S.robots.find((r) => r.id === id); if (!next) return;
+  const first = !S.robot || $("instruction").value === S.robot.default_instruction || !$("instruction").value;
+  S.robot = next;
+  if (first) $("instruction").value = next.default_instruction;
+  $("seedWrap").hidden = !next.has_seed;
+  $("episodesWrap").hidden = next.id === "yam-mujoco";
+  $("secondsWrap").hidden = next.id !== "yam-mujoco";
+  $("realtimeWrap").hidden = next.id === "yam-mujoco";
+  const presets = $("presets"); presets.replaceChildren();
+  for (const p of next.presets) presets.append(el("button", { class: "chip", type: "button", onclick: () => { $("instruction").value = p; update(); } }, p));
+  $("robotNotes").textContent = next.notes.join(" ") || next.tagline;
+  renderRobots(); update();
+}
+
+/* ---- key and models ---- */
+function renderKey() {
+  const k = S.key; if (!k) return;
+  const state = !k.present ? "bad" : k.state === "valid" ? "ok" : k.state === "invalid" ? "bad" : "warn";
+  for (const id of ["keyDot", "keyDot2"]) $(id).className = "dot " + state;
+  $("keyMasked").textContent = k.present ? k.masked : "none";
+  $("keyLine").textContent = !k.present ? "No key saved" : k.line;
+  $("keyPillText").textContent = !k.present ? "Add API key" : k.state === "valid" ? "API key ✓ " + k.masked.slice(-4) : k.state === "invalid" ? "API key refused" : "API key saved";
+  $("keyFile").textContent = k.file;
+}
+function renderModels() {
+  const m = S.models; if (!m) return;
+  const select = $("model"); const keep = select.value;
+  const sig = JSON.stringify(m.items.map((i) => i.id));
+  if (select.dataset.sig !== sig) {
+    select.dataset.sig = sig;
+    select.replaceChildren(...m.items.map((i) => el("option", { value: i.id }, i.id + (i.owner && i.owner !== "public" ? "  ·  yours" : ""))));
+    if (keep && [...select.options].some((o) => o.value === keep)) select.value = keep;
+  }
+  $("modelHint").textContent = m.state === "loading" ? "Loading your account's models…" : m.state === "error"
+    ? "Could not load your models (" + m.error + "). The public ones stay available." : m.state === "ready" ? m.items.length + " models on your account." : "";
+}
+async function refreshModels() { try { await api("/api/models/refresh", {}); toast("Refreshing models…"); } catch (e) { toast(e.message, true); } }
+$("refreshModels").addEventListener("click", refreshModels);
+$("checkKey").addEventListener("click", async () => { try { S.key = await api("/api/key/check", {}); renderKey(); update(); } catch (e) { toast(e.message, true); } });
+$("keyForm").addEventListener("submit", async (event) => {
+  event.preventDefault(); const input = $("keyInput"); const value = input.value;
+  if (!value.trim()) return;
+  try { S.key = await api("/api/key", { key: value }); input.value = ""; renderKey(); update(); toast("Key verified and saved"); }
+  catch (e) { toast(e.message, true); }
+  finally { input.value = ""; }
+});
+
+/* ---- settings -> request ---- */
+function chosenModel() { return $("customModel").value.trim() || $("model").value; }
+function request() {
+  const r = { robot: S.robot && S.robot.id, model: chosenModel(), instruction: $("instruction").value, gui: S.gui, realtime: $("realtime").checked,
+    episodes: Number($("episodes").value), seed: Number($("seed").value), seconds: Number($("seconds").value) };
+  return r;
+}
+function setGui(on) { S.gui = on; $("guiOn").setAttribute("aria-pressed", String(on)); $("guiOff").setAttribute("aria-pressed", String(!on)); update(); }
+$("guiOn").addEventListener("click", () => setGui(true)); $("guiOff").addEventListener("click", () => setGui(false));
+for (const id of ["instruction", "episodes", "seed", "seconds", "realtime", "model", "customModel"]) $(id).addEventListener("input", update);
+
+let previewTimer = 0;
+function update() {
+  const running = S.run.state === "running";
+  const blockers = [];
+  if (!S.robot) blockers.push("Choose a robot."); else if (!S.robot.ready) blockers.push(S.robot.name + " is not ready on this machine.");
+  if (S.key && !S.key.present) blockers.push("Save your Dream API key (step 2).");
+  else if (S.key && S.key.state === "invalid") blockers.push("Dream refused the saved key. Replace it (step 2).");
+  if (!$("instruction").value.trim()) blockers.push("Write an instruction.");
+  if (running) blockers.push("A run is going. Stop it to start another.");
+  const box = $("blocker"); box.hidden = blockers.length === 0; box.textContent = blockers.join(" ");
+  $("launch").disabled = blockers.length > 0;
+  $("stop").disabled = !running;
+  $("summary").replaceChildren(S.robot ? el("span", {}, el("b", {}, S.robot.name), " · " + chosenModel() + " · " + (S.gui ? "window" : "headless")) : "Choose a robot and a model.");
+  clearTimeout(previewTimer);
+  if (S.robot) previewTimer = setTimeout(async () => {
+    try { const p = await api("/api/preview", request()); $("cmdText").textContent = "cd " + p.cwd + "\n" + p.command; }
+    catch (e) { $("cmdText").textContent = e.message; }
+  }, 250);
+}
+$("launch").addEventListener("click", async () => {
+  try { S.logOffset = 0; S.logLines = []; $("log").textContent = ""; S.run = await api("/api/launch", request()); toast("Started"); renderRun(); update(); location.hash = "#output"; }
+  catch (e) { toast(e.message, true); }
+});
+$("stop").addEventListener("click", async () => { $("stop").disabled = true; try { S.run = await api("/api/stop", {}); renderRun(); update(); toast("Stopped"); } catch (e) { toast(e.message, true); } });
+
+/* ---- the run ---- */
+function renderRun() {
+  const r = S.run; const dot = $("runDot");
+  const text = { idle: "No run yet", running: "Running", finished: "Finished", failed: "Stopped or failed" }[r.state] || r.state;
+  dot.className = "dot " + (r.state === "running" ? "warn" : r.state === "finished" ? "ok" : r.state === "failed" ? "bad" : "");
+  $("runState").textContent = text + (r.launch ? " · " + r.launch.robot : "") + (r.state === "failed" && r.exit_code != null ? " (exit " + r.exit_code + ")" : "");
+  $("runDir").textContent = r.dir ? "Files (command, full log, results" + (r.launch && r.launch.robot !== "yam-mujoco" ? ", video" : "") + "): " + r.dir : "";
+  const table = $("resultTable"), body = table.querySelector("tbody"); body.replaceChildren();
+  const rows = Array.isArray(r.results) ? r.results : [];
+  table.hidden = rows.length === 0;
+  for (const x of rows) body.append(el("tr", {}, el("td", {}, String((x.episode ?? 0) + 1)), el("td", { class: x.success ? "ok" : "bad" }, x.success ? "Success" : "Failed"),
+    el("td", {}, String(x.steps ?? "")), el("td", {}, String(x.requests ?? "")), el("td", {}, x.model_ms_mean != null ? Math.round(x.model_ms_mean) + " ms" : "")));
+}
+async function pollLog() {
+  if (S.run.state === "idle") return;
+  try {
+    const d = await api("/api/log?offset=" + S.logOffset); S.logOffset = d.offset;
+    if (d.text) { S.logLines.push(...d.text.split("\n")); S.logLines = S.logLines.slice(-200); const log = $("log"); const stick = log.scrollTop + log.clientHeight >= log.scrollHeight - 30; log.textContent = S.logLines.join("\n"); if (stick) log.scrollTop = log.scrollHeight; }
+  } catch (_) { /* the next tick tries again */ }
+}
+
+/* ---- polling ---- */
+async function poll() {
+  try {
+    const s = await api("/api/state");
+    S.robots = s.robots; S.key = s.key; S.models = s.models; S.run = s.run;
+    if (!S.robot && S.robots.length) { selectRobot((S.robots.find((r) => r.ready) || S.robots[0]).id); } else if (S.robot) { S.robot = S.robots.find((r) => r.id === S.robot.id) || S.robot; renderRobots(); }
+    renderKey(); renderModels(); renderRun(); update();
+    if (!S.autoChecked && S.key.present && S.key.state === "unchecked") {  // once per page load: is the saved key accepted?
+      S.autoChecked = true;
+      api("/api/key/check", {}).then((k) => { S.key = k; renderKey(); update(); }).catch(() => {});
+    }
+  } catch (e) { $("runState").textContent = "Lost contact with the launcher (" + e.message + ")"; }
+}
+if (!TOKEN) { $("blocker").hidden = false; $("blocker").textContent = "Open the address the launcher printed in the terminal: it carries the token."; }
+// The optional logo you supplied: shown only once it has loaded; a missing file (404) leaves no gap or broken icon.
+$("logo").addEventListener("load", () => { $("via").hidden = false; });
+$("logo").addEventListener("error", () => { $("via").hidden = true; });
+$("logo").src = "/logo.png?token=" + encodeURIComponent(TOKEN);
+poll(); setInterval(poll, 2500); setInterval(pollLog, 1200);
+</script>
+</body>
+</html>

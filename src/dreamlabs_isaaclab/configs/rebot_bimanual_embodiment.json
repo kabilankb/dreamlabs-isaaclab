@@ -1,0 +1,20 @@
+{
+  "state": {
+    "left_arm": [0, 6],
+    "left_gripper": [6, 7],
+    "right_arm": [7, 13],
+    "right_gripper": [13, 14]
+  },
+  "action": {
+    "left_arm": [0, 6],
+    "left_gripper": [6, 7],
+    "right_arm": [7, 13],
+    "right_gripper": [13, 14]
+  },
+  "video": {
+    "overhead": "observation.images.top",
+    "wrist_l": "observation.images.left_wrist",
+    "wrist_r": "observation.images.right_wrist"
+  },
+  "head_camera": "overhead"
+}

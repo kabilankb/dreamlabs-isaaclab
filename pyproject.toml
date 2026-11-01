@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "dreamlabs-isaaclab"
+version = "0.1.0"
+description = "Run Dream Labs' Dream-1 in Isaac Lab scenes (bimanual reBot B601, YAMLab's YAM) through a process bridge"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Apache-2.0" }
+authors = [{ name = "kabilankb" }]
+# The simulator side needs only numpy (+ Pillow to encode camera frames); it runs inside Isaac Sim's own Python.
+# The Dream library (`dreamlabs`) is NOT a dependency of this package: it lives in its own env (see README).
+dependencies = ["numpy>=1.24", "pillow>=10"]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0", "ruff>=0.6"]
+# Install into the Dream env (~/dream-env) only: the dataset tools run there.
+dream = ["dreamlabs>=1.0.23", "pyarrow>=14", "av>=15"]
+
+[project.scripts]
+dreamlabs-launcher = "dreamlabs_isaaclab.launcher:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+dreamlabs_isaaclab = ["configs/*.json", "launcher.html"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+line-length = 120

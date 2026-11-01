@@ -1,0 +1,95 @@
+# Adapted from YAMLab's put_pot_on_cooktop task (https://github.com/ARISE-Initiative/yamlab), MIT License,
+# Copyright (c) 2026 Tianyuan Dai: see LICENSE-YAMLab next to this file (yamlab6-task/) and NOTICE.
+# =====================================================================
+# PutAppleInBowl task config: Dream's MuJoCo YAM scene in Isaac Lab.
+#
+# Pick the apple and put it into the ceramic bowl. The banana, orange, water
+# bottle and plate are distractors on the table. Objects, sizes and masses are
+# Dream's own (yam_mujoco example), converted to USD by
+#   python -m dreamlabs_isaaclab.mujoco_scene_assets        (dreamlabs-isaaclab package)
+# which writes ~/.dreamlabs-isaaclab/assets/yam_mujoco_scene/<Name>/<name>_000.
+# Pass them with --asset apple=... (the dreamlabs_isaaclab.yam runner does it for you).
+# The apple and banana are YCB scans, CC BY 4.0; see that folder's ATTRIBUTION.txt.
+#
+# Layout: Dream's MuJoCo (x, y) -> YAMLab (X, Y) = (0.2525 + (0.24 - y), x): the arms
+# stand at lateral +-0.305 in both scenes, so left/right agree. The spawn-pose centres
+# are in put_apple_in_bowl_manager_cfg.py; the ranges below move them a little per reset.
+#
+# Keys here OVERRIDE configs/defaults.yaml on conflict.
+# =====================================================================
+
+env_names:
+  - PutAppleInBowl-v0
+
+# ---- Objects ---------------------------------------------------------
+# Position ranges are +/- metres about the object's default spot (position_range mode).
+objects:
+  apple:                                   # picked object (YCB apple scan, 6.6 cm)
+    mass: 0.12
+    randomization:
+      position_range: [0.03, 0.03]
+      orientation_range_deg: 180           # a sphere-ish fruit: any yaw
+      scale_range: [1.0, 1.0]
+  bowl:                                    # base object: open ceramic bowl, 16.6 cm wide, 5.5 cm tall
+    mass: 2.0
+    randomization:
+      position_range: [0.02, 0.02]
+      orientation_range_deg: 180
+      scale_range: [1.0, 1.0]
+  banana:                                  # distractor
+    mass: 0.045
+    randomization:
+      position_range: [0.01, 0.01]  # 12 cm apart in Dream's layout
+      orientation_range_deg: 30
+      scale_range: [1.0, 1.0]
+  orange:                                  # distractor
+    mass: 0.11
+    randomization:
+      position_range: [0.01, 0.01]  # 12 cm apart in Dream's layout
+      orientation_range_deg: 180
+      scale_range: [1.0, 1.0]
+  water_bottle:                            # distractor
+    mass: 0.276
+    randomization:
+      position_range: [0.03, 0.03]
+      orientation_range_deg: 180
+      scale_range: [1.0, 1.0]
+  plate:                                   # distractor
+    mass: 0.30
+    randomization:
+      position_range: [0.03, 0.03]
+      orientation_range_deg: 180
+      scale_range: [1.0, 1.0]
+
+# ---- Grasp detection -------------------------------------------------
+# Either arm may pick the apple (single-hand pick).
+grasp_detect:
+  left_arm: [apple]
+  right_arm: [apple]
+
+# ---- Runtime kwargs forwarded to the task-env constructor -----------
+kwargs:
+  pick_by_two_hands: false               # the apple is small: one arm picks it
+modes:
+  teleoperation:
+    kwargs:
+      check_gripper_release_for_ontop: true  # require gripper release for stage 2
+
+# ---- Stage-success thresholds ---------------------------------------
+# Stage 1: the apple is lifted this far above where it rested, held by a gripper.
+# Stage 2: the apple rests inside the bowl and the gripper has let go, using the generic
+# on-top check: the apple's origin (its lowest point) is 0.003 .. 0.033 m above the bowl's
+# origin (on the inner floor it reads about 0.010; balanced on the 0.055 m rim it would read
+# about 0.055 and fail) and within 0.045 m of the bowl's axis (the cavity is 0.050 m wide at
+# the floor and 0.150 m at the rim).
+# Orientation is not checked: a fruit has no upright. The check's angle is at most pi/2, so
+# 3.2 rad accepts every pose (the schema takes numbers only, not null).
+success:
+  pick_lift_threshold_m: 0.03
+  pick_required_consecutive_steps: 8
+  ontop_height_tolerance_m: 0.015
+  ontop_orientation_tolerance_rad: 3.2
+  ontop_z_offset_m: 0.018
+  ontop_xy_tolerance_m: 0.045
+  ontop_required_consecutive_steps_teleop: 8
+  ontop_required_consecutive_steps_eval: 30

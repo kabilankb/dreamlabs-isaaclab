@@ -1,0 +1,23 @@
+dreamlabs-isaaclab
+Copyright 2026 kabilankb. Licensed under the Apache License 2.0 (see LICENSE).
+
+This is an independent project. It is not affiliated with, endorsed by or sponsored by Dream Labs; "Dream Labs",
+"Dream-1" and the Dream Labs logo belong to Dream Labs. The logo is not part of this repository.
+
+Third-party material
+--------------------
+* yamlab6-task/ contains task code adapted from YAMLab (https://github.com/ARISE-Initiative/yamlab), the
+  PutPotOnCooktop task, MIT License, Copyright (c) 2026 Tianyuan Dai. Its licence text is in
+  yamlab6-task/LICENSE-YAMLab and must stay with those files.
+
+* mujoco_scene_assets.py rebuilds, as USD, the objects of the yam_mujoco example that ships inside Dream's `dreamlabs`
+  Python package (MIT License, Copyright (c) I2RT Robotics): the shapes, dimensions, masses and the layout of the bowl,
+  apple, banana, orange, water bottle and plate. Nothing from that package is copied into this repository: the
+  conversion reads your installed copy and writes to ~/.dreamlabs-isaaclab/.
+
+* The apple and banana meshes and textures that conversion reads are from the YCB Object and Model Set (Calli, Singh,
+  Walsman, Srinivasa, Abbeel, Dollar; Google 16k scans), licensed CC BY 4.0
+  (https://creativecommons.org/licenses/by/4.0/), as recentred, rescaled and resized by Dream's example. They are
+  converted on your machine and are not redistributed here; the generated folder carries its own ATTRIBUTION.txt.
+
+* The reBot scene runs in rebot-sim-pipeline, part of https://github.com/kabilankb/rebot-duo-course (Apache-2.0).
