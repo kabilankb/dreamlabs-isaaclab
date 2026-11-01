@@ -78,6 +78,23 @@ tr:last-child td { border-bottom: 0; }
 .steps > li::before { content: counter(step); position: absolute; left: 0; top: 2px; width: 32px; height: 32px; border-radius: 50%; background: var(--yellow); display: grid; place-items: center; font: 600 15px var(--mono); }
 .steps > li b { font-weight: 600; }
 
+
+.flow { margin: 20px 0 8px; border: 1px solid var(--rule); border-radius: var(--radius); background: #fff; padding: 14px 10px 6px; max-width: 980px; }
+.flow svg { display: block; width: 100%; height: auto; }
+.flow text { font-family: var(--sans); fill: var(--ink); }
+.flow .t { font-size: 17px; font-weight: 600; } .flow .s { font-size: 12.5px; fill: var(--ink-2); } .flow .c { font-size: 12.5px; fill: var(--ink-2); font-family: var(--mono); }
+.flow .lab { font-size: 13px; font-weight: 600; } .flow .cap { font-size: 12px; fill: var(--ink-2); }
+.flow .box { fill: var(--paper); stroke: #cfc9b3; stroke-width: 1.5; } .flow .box.hot { stroke: var(--ink); }
+.flow .line { stroke: #b7b09a; stroke-width: 2; fill: none; } .flow .head { fill: #b7b09a; }
+.flow .cell { fill: #eee9d7; } .flow .cell.new { fill: var(--peach); }
+.flow .dot { fill: var(--peach); stroke: #7a4a1c; stroke-width: 1.2; opacity: 0; animation: hop 6s linear infinite; }
+.flow .dot.back { fill: var(--yellow); }
+@keyframes hop { 0% { transform: translateX(0); opacity: 0; } 3% { opacity: 1; } 22% { opacity: 1; } 25% { transform: translateX(var(--d)); opacity: 0; } 100% { transform: translateX(var(--d)); opacity: 0; } }
+.flow .bar { fill: var(--peach); transform-box: fill-box; transform-origin: left center; animation: grow 6s linear infinite; }
+@keyframes grow { 0% { transform: scaleX(.02); } 100% { transform: scaleX(1); } }
+@media (prefers-reduced-motion: reduce) { .flow .dot { animation: none; opacity: 1; transform: translateX(calc(var(--d) / 2)); } .flow .bar { animation: none; transform: scaleX(.5); } }
+.flow-legend { font-size: 13.5px; color: var(--ink-2); padding: 6px 8px 10px; }
+
 footer { max-width: 1180px; margin: 0 auto; padding: 26px 28px 70px; color: var(--ink-2); font-size: 14px; border-top: 1px solid var(--rule); }
 
 @media (max-width: 920px) {
@@ -100,7 +117,7 @@ footer { max-width: 1180px; margin: 0 auto; padding: 26px 28px 70px; color: var(
 <div class="wrap" id="top">
 <nav class="side" aria-label="On this page">
   <div class="grp">Start</div>
-  <a href="#overview">Overview</a><a href="#install">1 · Install</a><a href="#api-key">2 · API key</a><a href="#launch">3 · Launch the page</a><a href="#test">4 · Test the API</a>
+  <a href="#overview">Overview</a><a href="#install">1 · Install</a><a href="#api-key">2 · API key</a><a href="#launch">3 · Launch the page</a><a href="#calls">4 · How the calls work</a><a href="#test">5 · Test the API</a>
   <div class="grp">Reference</div>
   <a href="#robots">Robots &amp; results</a><a href="#trouble">Troubleshooting</a><a href="#privacy">Privacy &amp; safety</a><a href="#credits">Credits</a>
 </nav>
@@ -226,15 +243,113 @@ Keep this address private: it can start the simulators on this machine. Ctrl-C t
     <h3>Using the page</h3>
     <ol class="steps">
       <li><b>Robot.</b> Pick a card. A card says <i>Not ready</i> and names what is missing if this machine can't run it.</li>
-      <li><b>API &amp; model.</b> Check that your key is saved and accepted, test the connection (<a href="#test">step 4</a>), and choose a model: the public Dream-1 models and any fine-tune on your account, or type a model id.</li>
+      <li><b>API &amp; model.</b> Check that your key is saved and accepted, test the connection (<a href="#test">step 5</a>), and choose a model: the public Dream-1 models and any fine-tune on your account, or type a model id.</li>
       <li><b>Run.</b> Write the instruction (example chips help), choose episodes, a first layout seed, window or headless. <b>Show the command</b> prints exactly what will run.</li>
       <li><b>Launch.</b> Starts Isaac Lab (or MuJoCo) with Dream-1 driving the arms. <b>Output</b> shows progress and a results table; <b>Stop</b> ends the simulator and its bridge together.</li>
     </ol>
     <p>Each run keeps its command, full log, <code>results.json</code> and (for the reBot) a video in <code>~/.dreamlabs-isaaclab/runs/&lt;time&gt;-&lt;robot&gt;/</code>. Only one run goes at a time, because two simulators on one key replace each other's sessions.</p>
   </section>
 
+  <section id="calls">
+    <h2><span class="num">4</span>How the API calls work</h2>
+    <p>Dream-1 is called in a loop. Your simulator keeps feeding the Dream client what the cameras see, and about once every second and a half it asks for the next <b>chunk</b>: 48 steps of joint targets for both arms, which the simulator then plays out while it prepares the next request. This package runs that loop for you; here is what happens in it.</p>
+
+    <figure class="flow">
+      <svg viewBox="0 0 960 330" role="img" aria-labelledby="flow-title flow-desc">
+        <title id="flow-title">The Dream-1 API calling loop</title>
+        <desc id="flow-desc">The Isaac Lab scene hands camera frames, joint state and the instruction to the bridge every 0.2 seconds. Once per chunk the bridge sends the last 9 frames to the Dream-1 API over HTTPS and gets 48 rows of 7 joint values per arm back. The scene plays 30 of those rows and the loop repeats.</desc>
+        <!-- the three parties -->
+        <rect class="box" x="10" y="30" width="210" height="190" rx="14"/>
+        <text class="t" x="28" y="62">Isaac Lab scene</text>
+        <text class="s" x="28" y="82">your sim client</text>
+        <text class="c" x="28" y="102">rebot.py · yam.py</text>
+        <text class="s" x="28" y="136">3 cameras</text><text class="s" x="28" y="154">joint state, grippers</text><text class="s" x="28" y="172">your instruction</text>
+        <text class="s" x="28" y="204">plays the rows it gets back</text>
+
+        <rect class="box" x="375" y="30" width="210" height="190" rx="14"/>
+        <text class="t" x="393" y="62">Bridge + DreamClient</text>
+        <text class="c" x="393" y="82">~/dream-env</text>
+        <g id="window"><rect class="cell" x="393" y="100" width="15" height="22" rx="3"/><rect class="cell" x="412" y="100" width="15" height="22" rx="3"/><rect class="cell" x="431" y="100" width="15" height="22" rx="3"/><rect class="cell" x="450" y="100" width="15" height="22" rx="3"/><rect class="cell" x="469" y="100" width="15" height="22" rx="3"/><rect class="cell" x="488" y="100" width="15" height="22" rx="3"/><rect class="cell" x="507" y="100" width="15" height="22" rx="3"/><rect class="cell" x="526" y="100" width="15" height="22" rx="3"/><rect class="cell new" x="545" y="100" width="15" height="22" rx="3"/></g>
+        <text class="s" x="393" y="144">last 9 frames, 0.2 s apart,</text><text class="s" x="393" y="162">newest state and prompt</text>
+        <text class="s" x="393" y="204">your key is used only here</text>
+
+        <rect class="box hot" x="740" y="30" width="210" height="190" rx="14"/>
+        <path d="M772 96c-9 0-16-7-16-15s7-15 15-15c3-9 12-15 22-15 13 0 24 10 25 23 8 1 14 7 14 14 0 9-8 16-17 16z" fill="#1b1a17" transform="translate(6 -2)"/>
+        <text class="t" x="758" y="140">Dream-1 API</text>
+        <text class="s" x="758" y="160">the hosted model</text>
+        <text class="s" x="758" y="204">uses your account credits</text>
+
+        <!-- the four calls -->
+        <path class="line" d="M222 88H369"/><path class="head" d="M369 88l-9-5v10z"/>
+        <text class="lab" x="232" y="68">① set_observation()</text><text class="cap" x="232" y="106">every 0.2 s of sim time</text>
+        <path class="line" d="M587 88H734"/><path class="head" d="M734 88l-9-5v10z"/>
+        <text class="lab" x="597" y="68">② get_action()</text><text class="cap" x="597" y="106">once per chunk · HTTPS</text>
+        <path class="line" d="M738 172H591"/><path class="head" d="M591 172l9-5v10z"/>
+        <text class="lab" x="600" y="152">③ 48 rows × 7</text><text class="cap" x="600" y="190">per arm · about 0.5 s</text>
+        <path class="line" d="M373 172H226"/><path class="head" d="M226 172l9-5v10z"/>
+        <text class="lab" x="236" y="152">④ play 30 rows</text><text class="cap" x="236" y="190">at 20 Hz, then repeat</text>
+
+        <circle class="dot" cx="222" cy="88" r="6" style="--d:147px; animation-delay:0s"/>
+        <circle class="dot" cx="587" cy="88" r="6" style="--d:147px; animation-delay:1.5s"/>
+        <circle class="dot back" cx="738" cy="172" r="6" style="--d:-147px; animation-delay:3s"/>
+        <circle class="dot back" cx="373" cy="172" r="6" style="--d:-147px; animation-delay:4.5s"/>
+
+        <!-- one cycle -->
+        <text class="lab" x="10" y="262">One cycle</text>
+        <rect x="100" y="250" width="850" height="16" rx="8" fill="#eee9d7"/>
+        <rect class="bar" x="100" y="250" width="850" height="16" rx="8"/>
+        <text class="cap" x="100" y="290">request: the sim waits, about 0.5 s</text>
+        <text class="cap" x="430" y="290">play the 30 rows: 1.5 s of simulated time</text>
+        <text class="cap" x="100" y="310">the first request of a run is slower (a few seconds) while Dream starts the model</text>
+      </svg>
+      <figcaption class="flow-legend">Peach dots are requests, yellow dots are answers. With reduced-motion set in your system the dots hold still.</figcaption>
+    </figure>
+
+    <h3>Step by step</h3>
+    <ol class="steps">
+      <li><b>Open a session, once</b> (<code>policy</code>). The bridge opens the model you chose. Nothing is sent yet.</li>
+      <li><b>Hand over what the robot sees</b> (<code>set_observation</code>). Every 0.2 s of simulated time the scene gives the client one tick: a JPEG per camera, the joint angles and grippers, and your instruction. The client keeps the last 9 frames per camera and only the newest state. This costs nothing: no network.</li>
+      <li><b>Ask for the next chunk</b> (<code>get_action</code>). About once per chunk the client sends that window to Dream over HTTPS with your key. The simulator pauses for the answer.</li>
+      <li><b>Get 48 steps back.</b> For each arm: 48 rows of 7 numbers, six joint angles in radians and a gripper from 0 (closed) to 1 (open), meant to be played at 20 rows per second.</li>
+      <li><b>Play them.</b> The simulator plays the first 30 rows against its own clock (30 steps per second in these scenes, so each row is held a little longer), converts the gripper to the robot's units, and when they run out it asks again.</li>
+      <li><b>Reset between episodes</b> (<code>reset_episode</code>). It ends the session on Dream's side and clears the frame window.</li>
+    </ol>
+
+    <h3>The same loop in code</h3>
+    <div class="code"><pre><span class="c"># what bridge.py does for the simulator (the Dream environment, ~/dream-env)</span>
+import dream
+
+client = dream.DreamClient()                     <span class="c"># reads ~/.dreamlabs/credentials</span>
+client.policy({"checkpoint": "dreamlabs/dream-1-beta", "strict": False, "action_hz": 20})
+
+<span class="c"># ① on every camera tick: a base64 JPEG per camera, the robot's state, the prompt</span>
+client.set_observation(frames, observation, timestamp=sim_time)
+
+<span class="c"># ② once per chunk; ③ the answer</span>
+chunk = client.get_action()
+left, right = chunk["q_l_chunk"], chunk["q_r_chunk"]   <span class="c"># 48 x 7 each</span>
+
+<span class="c"># ④ the simulator plays rows 0..29 of each, then asks again</span>
+client.reset_episode()                           <span class="c"># between episodes</span></pre><button class="copy" type="button">Copy</button></div>
+
+    <h3>Why a bridge?</h3>
+    <p>Dream's library pins numpy and jax versions that would break Isaac Sim's Python, so the two run as separate programs. The simulator starts <code>bridge.py</code> in <code>~/dream-env</code> and talks to it with one JSON line per request over a pipe (no server, no open port). Your key is read by the library inside that process only.</p>
+
+    <h3>Timing you can expect</h3>
+    <table>
+      <thead><tr><th>What</th><th>Typical</th><th>Seen in this project's runs</th></tr></thead>
+      <tbody>
+        <tr><td>First request of a run</td><td>a few seconds</td><td>2.3 to 4.7 s (Dream starts the model)</td></tr>
+        <tr><td>Later requests</td><td>about half a second</td><td>mean 0.68 s over 64 calls (0.43 s fastest, 2.7 s slowest)</td></tr>
+        <tr><td>One chunk played</td><td>1.5 s of simulated time</td><td>30 rows at 20 Hz = 45 steps at 30 Hz</td></tr>
+        <tr><td>Camera ticks kept</td><td>9 frames, 0.2 s apart</td><td>the library's defaults</td></tr>
+      </tbody>
+    </table>
+    <p class="sub">This is Dream's own loop, described for this setup. Dream's documentation (<a href="https://platform.dreamlabs.ai/">platform.dreamlabs.ai</a>) describes the same calls for your own robot.</p>
+  </section>
+
   <section id="test">
-    <h2><span class="num">4</span>Test the Dream API</h2>
+    <h2><span class="num">5</span>Test the Dream API</h2>
     <p>Work up this ladder. Each rung proves one more thing, and the first three cost nothing.</p>
     <table>
       <thead><tr><th>#</th><th>Test</th><th>Where</th><th>Proves</th><th>Cost</th></tr></thead>
